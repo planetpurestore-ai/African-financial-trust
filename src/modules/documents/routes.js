@@ -25,8 +25,8 @@ const upload = multer({
   },
 });
 
-async function accessOr404(req, businessId) {
-  const access = await getBusinessAccess(req.auth, businessId);
+async function accessOr404(req, businessId, scope = 'documents.read') {
+  const access = await getBusinessAccess(req.auth, businessId, scope);
   if (!access) throw notFound('Business not found');
   return access;
 }
@@ -39,7 +39,7 @@ router.post(
     if (!req.file) throw badRequest('A file is required in the "file" field');
     const businessId = String(req.body.businessId || '');
     if (!businessId) throw badRequest('businessId is required');
-    const access = await accessOr404(req, businessId);
+    const access = await accessOr404(req, businessId, 'documents.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const result = await ingestDocument({ auth: req.auth, businessId, file: req.file, ip: req.ip });
     res.status(201).json({ data: result.document, duplicate: result.duplicate });
@@ -89,7 +89,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const doc = await getDocument(req.params.id);
-    const access = await accessOr404(req, doc.business_id);
+    const access = await accessOr404(req, doc.business_id, 'documents.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     await enqueueJob({
       orgId: req.auth.org.id,
@@ -108,7 +108,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const doc = await getDocument(req.params.id);
-    const access = await accessOr404(req, doc.business_id);
+    const access = await accessOr404(req, doc.business_id, 'documents.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const result = await processDocument(doc.id);
     res.json({ data: result });
@@ -122,7 +122,7 @@ router.patch(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const doc = await getDocument(req.params.id);
-    const access = await accessOr404(req, doc.business_id);
+    const access = await accessOr404(req, doc.business_id, 'documents.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const input = parse(reviewSchema, req.body);
     res.json({

@@ -25,8 +25,8 @@ import {
 const router = Router();
 router.use(requireAuth);
 
-async function accessOr404(req, businessId) {
-  const access = await getBusinessAccess(req.auth, businessId);
+async function accessOr404(req, businessId, scope = 'invoices.read') {
+  const access = await getBusinessAccess(req.auth, businessId, scope);
   if (!access) throw notFound('Business not found');
   return access;
 }
@@ -36,7 +36,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const input = parse(createInvoiceSchema, req.body);
-    const access = await accessOr404(req, input.businessId);
+    const access = await accessOr404(req, input.businessId, 'invoices.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     res.status(201).json({ data: await createInvoice(req.auth, input, { ip: req.ip }) });
   }),
@@ -73,7 +73,7 @@ router.patch(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const invoice = await getInvoice(req.params.id);
-    const access = await accessOr404(req, invoice.business_id);
+    const access = await accessOr404(req, invoice.business_id, 'invoices.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const input = parse(
       z.object({
@@ -94,7 +94,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const invoice = await getInvoice(req.params.id);
-    const access = await accessOr404(req, invoice.business_id);
+    const access = await accessOr404(req, invoice.business_id, 'invoices.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     res.json({ data: await verifyInvoiceRecord(req.auth, invoice.id, { ip: req.ip }) });
   }),
@@ -129,7 +129,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const invoice = await getInvoice(req.params.id);
-    const access = await accessOr404(req, invoice.business_id);
+    const access = await accessOr404(req, invoice.business_id, 'invoices.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const input = parse(paymentSchema, req.body);
     res.status(201).json({ data: await recordPayment(req.auth, invoice.id, input, { ip: req.ip }) });
@@ -159,7 +159,7 @@ for (const [path, kind] of Object.entries(kinds)) {
     requireWriteRole,
     asyncHandler(async (req, res) => {
       const input = parse(kind.schema, req.body);
-      const access = await accessOr404(req, input.businessId);
+      const access = await accessOr404(req, input.businessId, 'invoices.write');
       if (access.mode === 'granted') throw notFound('Business not found');
       res.status(201).json({ data: await kind.create(req.auth, input) });
     }),

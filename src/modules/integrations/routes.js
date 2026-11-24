@@ -21,6 +21,27 @@ import {
 const router = Router();
 router.use(requireAuth);
 
+const API_SCOPES = [
+  'business.read',
+  'business.write',
+  'documents.read',
+  'documents.write',
+  'invoices.read',
+  'invoices.write',
+  'reconciliation.read',
+  'reconciliation.write',
+  'trust_record.read',
+  'trust_record.write',
+  'counterparties.read',
+  'counterparties.write',
+  'reports.read',
+  'reports.write',
+  'audit.read',
+  'system.read',
+  'integrations.read',
+  'integrations.write',
+];
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -100,7 +121,7 @@ apiKeyRouter.post(
       z.object({
         name: z.string().trim().min(2).max(120),
         role: z.enum(['institution_admin', 'institution_analyst', 'business_admin', 'business_user', 'auditor']),
-        scopes: z.array(z.string().max(60)).min(1),
+        scopes: z.array(z.enum(API_SCOPES)).min(1),
         expiresAt: z.string().datetime().optional().nullable(),
       }),
       req.body,

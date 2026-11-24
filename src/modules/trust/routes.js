@@ -7,8 +7,8 @@ import { generateTrustRecord, getTrustRecord, latestTrustRecord, listTrustRecord
 
 const router = Router();
 
-async function accessOr404(req, businessId) {
-  const access = await getBusinessAccess(req.auth, businessId);
+async function accessOr404(req, businessId, scope = 'trust_record.read') {
+  const access = await getBusinessAccess(req.auth, businessId, scope);
   if (!access) throw notFound('Business not found');
   return access;
 }
@@ -38,7 +38,7 @@ router.post(
   requireAuth,
   requireWriteRole,
   asyncHandler(async (req, res) => {
-    const access = await accessOr404(req, req.params.businessId);
+    const access = await accessOr404(req, req.params.businessId, 'trust_record.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     res.status(201).json({ data: await generateTrustRecord(req.auth, req.params.businessId, { ip: req.ip }) });
   }),

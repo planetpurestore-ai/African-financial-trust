@@ -43,8 +43,8 @@ publicRouter.post(
 const router = Router();
 router.use(requireAuth);
 
-async function accessOr404(req, businessId) {
-  const access = await getBusinessAccess(req.auth, businessId);
+async function accessOr404(req, businessId, scope = ['counterparties.read', 'invoices.read', 'trust_record.read']) {
+  const access = await getBusinessAccess(req.auth, businessId, scope);
   if (!access) throw notFound('Business not found');
   return access;
 }
@@ -63,7 +63,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const input = parse(createCounterpartySchema, req.body);
-    const access = await accessOr404(req, input.businessId);
+    const access = await accessOr404(req, input.businessId, 'counterparties.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     res.status(201).json({ data: await createCounterparty(req.auth, input) });
   }),
@@ -83,7 +83,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const cp = await getCounterparty(req.params.id);
-    const access = await accessOr404(req, cp.business_id);
+    const access = await accessOr404(req, cp.business_id, 'counterparties.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const input = parse(z.object({ invoiceId: z.string().length(26) }), req.body);
     const baseUrl = `${req.protocol}://${req.get('host')}`;

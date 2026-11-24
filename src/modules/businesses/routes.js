@@ -56,7 +56,13 @@ router.post(
 router.get(
   '/:id',
   asyncHandler(async (req, res) => {
-    const access = await getBusinessAccess(req.auth, req.params.id);
+    const access = await getBusinessAccess(req.auth, req.params.id, [
+      'business.read',
+      'trust_record.read',
+      'documents.read',
+      'invoices.read',
+      'reconciliation.read',
+    ]);
     if (!access) throw notFound('Business not found');
     res.json({ data: await getBusinessDetail(req.auth, req.params.id), access: { mode: access.mode } });
   }),
@@ -66,7 +72,7 @@ router.patch(
   '/:id',
   requireWriteRole,
   asyncHandler(async (req, res) => {
-    const access = await getBusinessAccess(req.auth, req.params.id);
+    const access = await getBusinessAccess(req.auth, req.params.id, 'business.write');
     if (!access) throw notFound('Business not found');
     if (access.mode === 'granted') throw notFound('Business not found');
     const input = parse(updateBusinessSchema, req.body);
@@ -77,7 +83,13 @@ router.patch(
 router.get(
   '/:id/history',
   asyncHandler(async (req, res) => {
-    const access = await getBusinessAccess(req.auth, req.params.id);
+    const access = await getBusinessAccess(req.auth, req.params.id, [
+      'business.read',
+      'trust_record.read',
+      'documents.read',
+      'invoices.read',
+      'reconciliation.read',
+    ]);
     if (!access) throw notFound('Business not found');
     res.json({ data: await listHistory(req.auth, req.params.id) });
   }),
@@ -94,7 +106,7 @@ router.post(
   '/:id/verify',
   requireRole('system_admin', 'institution_admin'),
   asyncHandler(async (req, res) => {
-    const access = await getBusinessAccess(req.auth, req.params.id);
+    const access = await getBusinessAccess(req.auth, req.params.id, 'business.write');
     if (!access) throw notFound('Business not found');
     const input = parse(verificationSchema, req.body);
     res.json({ data: await recordVerification(req.auth, req.params.id, input, { ip: req.ip }) });
@@ -112,7 +124,7 @@ router.get(
   '/:id/access-grants',
   requireRole('business_admin', 'system_admin'),
   asyncHandler(async (req, res) => {
-    const access = await getBusinessAccess(req.auth, req.params.id);
+    const access = await getBusinessAccess(req.auth, req.params.id, 'business.write');
     if (!access) throw notFound('Business not found');
     res.json({ data: await listAccessGrants(req.params.id) });
   }),
@@ -122,7 +134,7 @@ router.post(
   '/:id/access-grants',
   requireRole('business_admin', 'system_admin'),
   asyncHandler(async (req, res) => {
-    const access = await getBusinessAccess(req.auth, req.params.id);
+    const access = await getBusinessAccess(req.auth, req.params.id, 'business.write');
     if (!access) throw notFound('Business not found');
     const input = parse(grantSchema, req.body);
     res.status(201).json({ data: await grantInstitutionAccess(req.auth, req.params.id, input, { ip: req.ip }) });

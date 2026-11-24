@@ -295,6 +295,16 @@ test('a cross-tenant document read is refused', async () => {
   assert.equal(response.status, 404);
 });
 
+test('the original file is served from durable storage only to an authorised tenant', async () => {
+  const allowed = await agentBizA.agent.get(`/api/v1/documents/${documentA.id}/file`);
+  assert.equal(allowed.status, 200, allowed.text);
+  assert.match(allowed.headers['content-type'], /application\/pdf/);
+  assert.equal(allowed.body.subarray(0, 4).toString(), '%PDF');
+
+  const denied = await agentBizB.agent.get(`/api/v1/documents/${documentA.id}/file`);
+  assert.equal(denied.status, 404);
+});
+
 test('unsupported upload types are rejected', async () => {
   const response = await agentBizA.agent
     .post('/api/v1/documents')
@@ -504,6 +514,30 @@ test('an institution can read a trust record only after an explicit access grant
   assert.equal(after.body.data.business_id, businessA.id);
 });
 
+test('an access grant is limited to its declared scopes', async () => {
+  const grants = await agentBizA.agent.get(`/api/v1/businesses/${businessA.id}/access-grants`);
+  assert.equal(grants.status, 200, grants.text);
+  for (const grant of grants.body.data) {
+    await agentBizA.agent.delete(`/api/v1/businesses/access-grants/${grant.id}`).set('x-aft-csrf', csrf.bizA);
+  }
+
+  const invoicesOnly = await post(agentBizA.agent, csrf.bizA, `/api/v1/businesses/${businessA.id}/access-grants`, {
+    institutionOrgId: ids.inst,
+    scopes: ['invoices.read'],
+    purpose: 'Invoice review only',
+  });
+  assert.equal(invoicesOnly.status, 201, invoicesOnly.text);
+
+  const invoices = await agentInst.agent.get(`/api/v1/invoices?businessId=${businessA.id}`);
+  assert.equal(invoices.status, 200, invoices.text);
+
+  const documents = await agentInst.agent.get(`/api/v1/documents?businessId=${businessA.id}`);
+  assert.equal(documents.status, 404);
+
+  const trust = await agentInst.agent.get(`/api/v1/businesses/${businessA.id}/trust-record`);
+  assert.equal(trust.status, 404);
+});
+
 /* ------------------------------------------------------------ audit chain */
 
 test('the audit chain verifies and detects tampering', async () => {
@@ -541,6 +575,29 @@ test('an API key authenticates without a CSRF token and can be revoked', async (
 
   const denied = await request(app).get('/api/v1/businesses').set('authorization', `Bearer ${key}`);
   assert.equal(denied.status, 401);
+});
+
+test('an API key cannot exceed its declared scopes', async () => {
+  const created = await post(agentBizA.agent, csrf.bizA, '/api/v1/api-keys', {
+    name: 'Invoice-only key',
+    role: 'business_admin',
+    scopes: ['invoices.read'],
+  });
+  assert.equal(created.status, 201, created.text);
+  const key = created.body.data.key;
+
+  const invoices = await request(app)
+    .get(`/api/v1/invoices?businessId=${businessA.id}`)
+    .set('authorization', `Bearer ${key}`);
+  assert.equal(invoices.status, 200, invoices.text);
+
+  const businesses = await request(app).get('/api/v1/businesses').set('authorization', `Bearer ${key}`);
+  assert.equal(businesses.status, 403);
+
+  const audit = await request(app).get('/api/v1/audit').set('authorization', `Bearer ${key}`);
+  assert.equal(audit.status, 403);
+
+  await agentBizA.agent.delete(`/api/v1/api-keys/${created.body.data.id}`).set('x-aft-csrf', csrf.bizA);
 });
 
 /* -------------------------------------------------------------- contract */

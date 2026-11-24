@@ -11,7 +11,7 @@ import auditRoutes from './modules/audit/routes.js';
 import adminRoutes from './modules/admin/routes.js';
 import reportRoutes from './modules/reports/routes.js';
 import { openApiDocument } from './openapi.js';
-import { notFound } from './lib/errors.js';
+import { forbidden, notFound } from './lib/errors.js';
 import { authenticate } from './middleware/auth.js';
 
 const api = Router();
@@ -32,6 +32,28 @@ api.get('/openapi.json', (_req, res) => res.json(openApiDocument));
 // Resolve a session cookie or API key for every route below. Routes that need
 // a principal apply requireAuth themselves; public routes tolerate anonymity.
 api.use(authenticate);
+
+// API keys are intentionally narrower than a human session. Business-scoped
+// modules enforce their own read/write scope; these platform routes need the
+// same treatment so a key issued for invoice reading cannot inspect the audit
+// trail, system health or integration credentials.
+api.use((req, _res, next) => {
+  if (req.auth?.type !== 'api_key') return next();
+  const path = req.path;
+  const read = req.method === 'GET' || req.method === 'HEAD';
+  let scope = null;
+  if (/^\/businesses\/[^/]+\/trust-record/.test(path)) scope = read ? 'trust_record.read' : 'trust_record.write';
+  else if (path === '/businesses' || path.startsWith('/businesses/')) scope = read ? 'business.read' : 'business.write';
+  else if (path === '/audit' || path.startsWith('/audit/')) scope = 'audit.read';
+  else if (path === '/system' || path.startsWith('/system/')) scope = 'system.read';
+  else if (path === '/reports' || path.startsWith('/reports/')) scope = read ? 'reports.read' : 'reports.write';
+  else if (path === '/integrations' || path.startsWith('/integrations/')) scope = read ? 'integrations.read' : 'integrations.write';
+  else if (path === '/api-keys' || path.startsWith('/api-keys/')) scope = read ? 'integrations.read' : 'integrations.write';
+  if (!scope) return next();
+  const scopes = req.auth.scopes || [];
+  if (scopes.includes('*') || scopes.includes(scope)) return next();
+  return next(forbidden(`API key lacks scope ${scope}`));
+});
 
 api.use('/auth', authRoutes);
 api.use('/businesses', businessRoutes);

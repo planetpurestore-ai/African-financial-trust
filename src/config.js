@@ -52,12 +52,6 @@ export const config = {
     enabled: bool(process.env.JOB_WORKER_ENABLED, true),
     concurrency: int(process.env.JOB_CONCURRENCY, 2),
   },
-  ai: {
-    enabled: bool(process.env.AI_EXTRACTION_ENABLED, false),
-    baseUrl: process.env.OPENAI_API_BASE || '',
-    apiKey: process.env.OPENAI_API_KEY || '',
-    model: process.env.AI_EXTRACTION_MODEL || '',
-  },
   retentionDays: int(process.env.DATA_RETENTION_DAYS, 2555),
   version: '1.0.0',
 };

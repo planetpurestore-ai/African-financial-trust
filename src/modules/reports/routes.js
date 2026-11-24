@@ -48,7 +48,7 @@ router.post(
     );
     if (input.type !== 'audit' && !input.businessId) throw notFound('businessId is required for this report');
     if (input.businessId) {
-      const access = await getBusinessAccess(req.auth, input.businessId);
+      const access = await getBusinessAccess(req.auth, input.businessId, ['reports.read', 'trust_record.read']);
       if (!access) throw notFound('Business not found');
     }
 

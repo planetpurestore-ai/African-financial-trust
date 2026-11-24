@@ -19,8 +19,8 @@ const upload = multer({
   limits: { fileSize: config.maxUploadBytes, files: 1 },
 });
 
-async function accessOr404(req, businessId) {
-  const access = await getBusinessAccess(req.auth, businessId);
+async function accessOr404(req, businessId, scope = 'reconciliation.read') {
+  const access = await getBusinessAccess(req.auth, businessId, scope);
   if (!access) throw notFound('Business not found');
   return access;
 }
@@ -72,7 +72,7 @@ router.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const input = parse(createSchema, req.body);
-    const access = await accessOr404(req, input.businessId);
+    const access = await accessOr404(req, input.businessId, 'reconciliation.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     res.status(201).json({ data: await createTransaction(req.auth, input) });
   }),
@@ -99,7 +99,7 @@ router.post(
       rows = input.rows;
     }
     if (!rows?.length) throw badRequest('No transaction rows supplied');
-    const access = await accessOr404(req, input.businessId);
+    const access = await accessOr404(req, input.businessId, 'reconciliation.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     const result = await importTransactions(req.auth, input, { rows, filename: req.file?.originalname });
     res.status(201).json({ data: result });
@@ -130,7 +130,7 @@ reconciliationRouter.post(
   requireWriteRole,
   asyncHandler(async (req, res) => {
     const input = parse(runSchema, req.body);
-    const access = await accessOr404(req, input.businessId);
+    const access = await accessOr404(req, input.businessId, 'reconciliation.write');
     if (access.mode === 'granted') throw notFound('Business not found');
     res.status(201).json({ data: await runReconciliation(req.auth, input, { ip: req.ip }) });
   }),
