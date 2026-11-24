@@ -450,9 +450,10 @@ function reportModal(types, business) {
 export async function systemView(el) {
   setActiveNav('system');
   setCrumbs([{ label: 'Trust Engine', href: '#/overview' }, { label: 'System' }]);
-  const [health, jobs] = await Promise.all([
+  const [health, jobs, mfa] = await Promise.all([
     api('/system/health').then((r) => r.data),
     api('/system/jobs?limit=50').then((r) => r.data).catch(() => []),
+    api('/auth/mfa/status').then((r) => r.data).catch(() => ({ enabled: false })),
   ]);
   const failed = jobs.filter((j) => j.status === 'failed');
   el.innerHTML = `${pageHead({
@@ -461,6 +462,10 @@ export async function systemView(el) {
     sub: 'Runtime state, database connectivity, storage usage and the durable extraction queue.',
     actions: `<button class="btn" data-action="refresh">Refresh</button>`,
   })}
+    <div class="card pad section">
+      <div class="card-head"><div><h3>Multi-factor authentication</h3><p class="small muted">Protect this account with a TOTP authenticator app. Recovery codes are shown only once.</p></div>${mfa.enabled ? statusChip('enabled', 'Enabled') : '<button class="btn btn-primary btn-sm" data-action="mfa-setup">Set up MFA</button>'}</div>
+      <div id="mfa-panel"></div>
+    </div>
     <div class="grid k4">
       <div class="card kpi ${health.status === 'operational' ? 'teal' : ''}"><div class="label">Status</div><div class="value" style="font-size:24px">${esc(titleCase(health.status))}</div><div class="foot">v${esc(health.version)} · ${esc(health.environment)}</div></div>
       <div class="card kpi"><div class="label">Database</div><div class="value" style="font-size:24px">${health.database?.connected ? 'Connected' : 'Unavailable'}</div><div class="foot">${num(health.database?.latency_ms)} ms · ${health.database?.error ? esc(health.database.error) : 'TLS connection'}</div></div>
@@ -497,6 +502,20 @@ export async function systemView(el) {
       </table></div>
     </div>`;
   el.querySelector('[data-action="refresh"]').addEventListener('click', () => window.dispatchEvent(new HashChangeEvent('hashchange')));
+  el.querySelector('[data-action="mfa-setup"]')?.addEventListener('click', async (event) => {
+    event.currentTarget.disabled = true;
+    try {
+      const setup = (await api('/auth/mfa/setup', { method: 'POST', body: {} })).data;
+      const panel = el.querySelector('#mfa-panel');
+      panel.innerHTML = `<div class="notice info" style="margin-top:12px"><span>Scan this otpauth URI in your authenticator app, or enter the secret manually.</span></div><div class="hash-box" style="margin-top:10px;word-break:break-all">${esc(setup.otpauthUri)}</div><p class="small muted" style="margin-top:8px">Manual secret: <span class="mono">${esc(setup.secret)}</span></p><p class="small muted">Recovery codes (save securely now):</p><div class="hash-box mono">${setup.recoveryCodes.map((code) => esc(code)).join('<br>')}</div><form id="mfa-enable-form" style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="field"><span>Current authenticator code</span><input name="code" inputmode="numeric" minlength="6" maxlength="6" required></label><button class="btn btn-primary" type="submit">Enable MFA</button></form>`;
+      panel.querySelector('form').addEventListener('submit', async (submitEvent) => {
+        submitEvent.preventDefault();
+        const form = submitEvent.currentTarget;
+        try { await api('/auth/mfa/enable', { method: 'POST', body: { code: form.code.value } }); toast('MFA enabled for this account.'); window.dispatchEvent(new HashChangeEvent('hashchange')); }
+        catch (error) { toast(error.message, 'error'); }
+      });
+    } catch (error) { toast(error.message, 'error'); event.currentTarget.disabled = false; }
+  });
   el.querySelectorAll('[data-retry]').forEach((b) => b.addEventListener('click', async () => {
     b.disabled = true;
     try { await api(`/system/jobs/${b.dataset.retry}/retry`, { method: 'POST', body: {} }); toast('Job re-queued.'); window.dispatchEvent(new HashChangeEvent('hashchange')); }

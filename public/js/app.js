@@ -80,10 +80,14 @@ function showLogin() {
     button.disabled = true;
     button.textContent = 'Signing in…';
     try {
-      await api('/auth/login', {
+      const loginResult = (await api('/auth/login', {
         method: 'POST',
         body: { email: form.email.value.trim(), password: form.password.value },
-      });
+      })).data;
+      if (loginResult.mfaRequired) {
+        renderMfaChallenge(loginResult);
+        return;
+      }
       const me = (await api('/auth/me')).data;
       $('login-screen').hidden = true;
       await enterApp(me);
@@ -92,6 +96,34 @@ function showLogin() {
       errorBox.textContent = error.message;
       button.disabled = false;
       button.textContent = 'Sign in to the Trust Engine';
+    }
+  });
+}
+
+function renderMfaChallenge({ challengeToken, challengeExpires }) {
+  const panel = document.querySelector('.login-panel');
+  panel.innerHTML = `<form id="mfa-login-form" class="login-form" novalidate>
+    <p class="eyebrow">Additional verification</p><h2>Enter your authenticator code</h2>
+    <p class="muted">Enter the six-digit code from your authenticator app. A single-use recovery code may also be used.</p>
+    <label class="field"><span>Verification code</span><input name="code" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="24" required autofocus></label>
+    <div class="login-error" id="mfa-login-error" role="alert" hidden></div>
+    <button class="btn btn-primary btn-block" type="submit">Verify and continue</button>
+    <p class="login-note">This challenge expires ${esc(fmtDate(challengeExpires))}. Recovery codes are single-use.</p>
+  </form>`;
+  const form = document.getElementById('mfa-login-form');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button');
+    const error = document.getElementById('mfa-login-error');
+    button.disabled = true; button.textContent = 'Verifying…'; error.hidden = true;
+    try {
+      await api('/auth/mfa/verify', { method: 'POST', body: { challengeToken, code: form.code.value.trim() } });
+      const me = (await api('/auth/me')).data;
+      $('login-screen').hidden = true;
+      await enterApp(me);
+    } catch (e) {
+      error.textContent = e.message; error.hidden = false;
+      button.disabled = false; button.textContent = 'Verify and continue';
     }
   });
 }

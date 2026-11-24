@@ -16,6 +16,10 @@ import {
   listUsers,
   login,
   logout,
+  mfaStatus,
+  beginMfaSetup,
+  enableMfa,
+  verifyMfaChallenge,
   updateUser,
 } from './service.js';
 import { email } from '../../lib/validate.js';
@@ -37,6 +41,9 @@ router.post(
   asyncHandler(async (req, res) => {
     const input = parse(loginSchema, req.body);
     const result = await login({ ...input, ip: req.ip, userAgent: req.get('user-agent') });
+    if (result.mfaRequired) {
+      return res.json({ data: { mfaRequired: true, challengeToken: result.challengeToken, challengeExpires: result.challengeExpires } });
+    }
     res.setHeader('set-cookie', [
       serializeCookie(config.sessionCookie, result.token, {
         ...cookieBase,
@@ -73,6 +80,31 @@ router.post(
     res.json({ data: await activateInvitation(input) });
   }),
 );
+
+const mfaCodeSchema = z.object({ code: z.string().trim().min(6).max(24) });
+
+router.get('/mfa/status', authenticate, requireAuth, asyncHandler(async (req, res) => {
+  res.json({ data: await mfaStatus(req.auth) });
+}));
+
+router.post('/mfa/setup', authenticate, requireAuth, asyncHandler(async (req, res) => {
+  res.json({ data: await beginMfaSetup(req.auth) });
+}));
+
+router.post('/mfa/enable', authenticate, requireAuth, asyncHandler(async (req, res) => {
+  const input = parse(mfaCodeSchema, req.body);
+  res.json({ data: await enableMfa(req.auth, input.code) });
+}));
+
+router.post('/mfa/verify', loginRateLimit, asyncHandler(async (req, res) => {
+  const input = parse(z.object({ challengeToken: z.string().min(20).max(200), code: z.string().trim().min(6).max(24) }), req.body);
+  const result = await verifyMfaChallenge({ ...input, ip: req.ip, userAgent: req.get('user-agent') });
+  res.setHeader('set-cookie', [
+    serializeCookie(config.sessionCookie, result.token, { ...cookieBase, maxAge: config.sessionHours * 3600, expires: result.expires }),
+    serializeCookie(config.csrfCookie, result.csrf, { ...cookieBase, httpOnly: false, maxAge: config.sessionHours * 3600, expires: result.expires }),
+  ]);
+  res.json({ data: { user: result.user, org: result.org, csrfToken: result.csrf } });
+}));
 
 router.post(
   '/logout',

@@ -12,15 +12,15 @@ This document is the honest status of the build. It distinguishes what is operat
 
 The Trust Engine is a working full-stack application. It has a real database, authentication, tenant isolation, document ingestion, deterministic extraction, invoice verification, transaction reconciliation, counterparty confirmation, versioned Trust Records, a hash-chained audit log, PDF/CSV reports, a role-based dashboard, a versioned API and automated tests. It is deployed and publicly reachable, and the live instance has been verified with a real login and a real Trust Record hash check.
 
-It is **not** a production-certified financial institution platform. No external registry, bank, mobile-money, payment or email provider is connected. The synthetic demo accounts were disabled in production, their sessions revoked and audit events recorded; their known password remains in source history and must never be used for real onboarding. There has been no penetration test, load test, backup restore drill or regulatory review. Secure administrator invitation/password activation is implemented, but MFA is still required before real customer onboarding.
+It is **not** a production-certified financial institution platform. No external registry, bank, mobile-money, payment or email provider is connected. The synthetic demo accounts were disabled in production, their sessions revoked and audit events recorded; their known password remains in source history and must never be used for real onboarding. There has been no penetration test, load test, backup restore drill or regulatory review. TOTP MFA is now implemented and tested locally, but the published runtime still requires the next deployment and production administrator enrollment before real customer onboarding.
 
 ## 2. What was delivered
 
 | Area | Status | Evidence |
 | --- | --- | --- |
 | Backend API | Operational | Express/Node 22, `/api/v1`, OpenAPI 3.1 at `/api/v1/openapi.json` |
-| Database | Operational | 38 tables, migrations 001–008, managed TiDB in hosting, MariaDB in tests |
-| Authentication | Operational with MFA gap | scrypt passwords, sessions, CSRF, API keys, roles, logout, expiring single-use invitations and password activation |
+| Database | Operational | 40 tables, migrations 001–009, managed TiDB in hosting, MariaDB in tests |
+| Authentication | Operational; MFA pending deployment/enrollment | scrypt passwords, sessions, CSRF, API keys, roles, logout, expiring single-use invitations/password activation, TOTP challenge and recovery codes |
 | Tenant isolation | Operational | Organisation ownership, institution grants, scope checks, cross-tenant tests |
 | Business identity | Operational (manual checks) | Business records, identifiers, representatives, history, manual verification decisions |
 | Document ingestion | Operational | PDF/CSV/XLSX/JSON/images, SHA-256, duplicate detection, private download, durable blobs |
@@ -34,7 +34,7 @@ It is **not** a production-certified financial institution platform. No external
 | Reports | Operational | PDF and CSV, generation date, sources, methodology, limitations |
 | Dashboard | Operational | Login, overview, businesses, documents, invoices, reconciliation, counterparties, integrations, audit, reports, system health, trust index |
 | Public confirmation page | Operational | `/confirm/:token` in the SPA |
-| Tests | Operational | 33 integration + 6 unit tests, all passing |
+| Tests | Operational | 34 integration + 6 unit tests, all passing |
 | Deployment | Operational | Public container at the live URL, managed database, `/health` 200 |
 | GitHub delivery | Operational | Source pushed to `main` at commit `92314b2`; landing page preserved at root and engine delivered under `trust-engine/`. |
 | Email/SMS delivery | Not implemented | No provider configured; links are returned for manual sending |
@@ -86,9 +86,9 @@ Detailed documents:
 
 ### Database
 
-38 tables across eight migrations:
+40 tables across nine migrations:
 
-`organisations`, `users`, `sessions`, `access_grants`, `api_keys`, `country_profiles`, `org_settings`, `businesses`, `business_identifiers`, `business_representatives`, `business_history`, `counterparties`, `documents`, `document_extractions`, `extracted_fields`, `invoices`, `invoice_lines`, `invoice_status_history`, `purchase_orders`, `contracts`, `delivery_evidence`, `payment_records`, `import_batches`, `transactions`, `reconciliations`, `reconciliation_matches`, `trust_records`, `evidence_items`, `verification_events`, `audit_chain_heads`, `audit_logs`, `integrations`, `integration_credentials`, `processing_jobs`, `idempotency_keys`, `reports`, `document_blobs`, `user_invitations`.
+`organisations`, `users`, `sessions`, `access_grants`, `api_keys`, `country_profiles`, `org_settings`, `businesses`, `business_identifiers`, `business_representatives`, `business_history`, `counterparties`, `documents`, `document_extractions`, `extracted_fields`, `invoices`, `invoice_lines`, `invoice_status_history`, `purchase_orders`, `contracts`, `delivery_evidence`, `payment_records`, `import_batches`, `transactions`, `reconciliations`, `reconciliation_matches`, `trust_records`, `evidence_items`, `verification_events`, `audit_chain_heads`, `audit_logs`, `integrations`, `integration_credentials`, `processing_jobs`, `idempotency_keys`, `reports`, `document_blobs`, `user_invitations`, `user_mfa`, `mfa_challenges`.
 
 The schema is multi-country and multi-currency: `country_profiles` holds registration/tax labels and formats; monetary rows carry ISO currency codes. Rwanda is the seeded initial market, not a hardcoded constraint. There is no FX conversion engine; amounts are compared in their recorded currency.
 
@@ -139,7 +139,7 @@ All seeded accounts were created with the password **`AftDemo!2026#Kigali`**. Th
 ## 8. Testing and evidence
 
 ```bash
-npm test          # 33 integration tests, real MySQL/MariaDB
+npm test          # 34 integration tests, real MySQL/MariaDB
 npm run test:unit # 6 unit tests
 ```
 
@@ -177,7 +177,7 @@ Do not treat these ranges as commitments. Obtain quotes for the chosen providers
 
 Implemented: scrypt password hashing, hashed session tokens, CSRF, secure cookies, API-key hashing and scopes, role and grant checks, tenant isolation, upload signature checks, private downloads, AES-256-GCM credential encryption, audit hash chain, Trust Record hash chain, Helmet CSP, parameterised SQL, structured errors and request IDs.
 
-Not implemented or not proven: MFA/SSO, email verification, password reset, malware scanning, application-layer encryption of business records, shared rate limiting, field-level read auditing, automated retention/erasure, legal hold, backup restore drill, external anchoring of hashes, SSRF allowlisting for custom provider URLs, dependency CVE scanning, penetration testing and certifications. The audit chain detects casual row tampering, not a privileged database operator rewriting the whole chain. See [SECURITY.md](SECURITY.md).
+Not implemented or not proven: MFA enforcement/production enrollment, SSO, email verification, password reset, malware scanning, application-layer encryption of business records, shared rate limiting, field-level read auditing, automated retention/erasure, legal hold, backup restore drill, external anchoring of hashes, SSRF allowlisting for custom provider URLs, dependency CVE scanning, penetration testing and certifications. The audit chain detects casual row tampering, not a privileged database operator rewriting the whole chain. See [SECURITY.md](SECURITY.md).
 
 The highest-priority immediate action is to activate the first production administrator and enforce MFA before customer onboarding. The second is to set a unique `APP_ENCRYPTION_KEY` and confirm database backups.
 
@@ -187,7 +187,7 @@ The highest-priority immediate action is to activate the first production admini
 2. **No email delivery.** Confirmation links are returned by the API/UI; someone must send them manually. A transactional email provider is needed for automation.
 3. **Payment adapters are connection tests, not integrations.** Data sync, webhooks, token refresh, payment initiation and settlement reconciliation are not built.
 4. **Demo credentials remain public in source history but are disabled in production.** They must never be re-enabled or used for real data.
-5. **No MFA/password reset/email verification.** Required before onboarding external users.
+5. **MFA is not yet deployed/enforced for the production administrator; password reset/email verification are absent.** Required before onboarding external users.
 6. **No backup/restore drill or retention automation.** The managed database is durable, but operational procedures are not proven.
 7. **No malware scanning or SSRF allowlist.** Required before untrusted uploads/custom provider URLs at scale.
 8. **No load, soak, penetration or browser E2E testing.** The job claim is safe for a single container; stale `running` jobs after a crash are not automatically recovered.
@@ -241,7 +241,7 @@ The detailed environment table, migration notes, health checks, backup checklist
 └── trust-engine/
     ├── src/                              # Express API and modules
     ├── public/                           # dashboard SPA and brand assets
-    ├── db/migrations/                    # 001–007 schema
+    ├── db/migrations/                    # 001–009 schema
     ├── scripts/seed.js                   # synthetic demonstration dataset
     ├── tests/                            # integration and unit tests
     ├── docs/                             # architecture, API, methodology, security, deployment, integrations, testing, handover

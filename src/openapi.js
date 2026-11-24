@@ -145,9 +145,13 @@ export const openApiDocument = {
           required: true,
           content: { 'application/json': { schema: { type: 'object', required: ['email', 'password'], properties: { email: { type: 'string' }, password: { type: 'string' } } } } },
         },
-        responses: { 200: { description: 'Signed in' }, 401: errorResponse, 429: errorResponse },
+        responses: { 200: { description: 'Signed in, or an MFA challenge when enabled' }, 401: errorResponse, 429: errorResponse },
       },
     },
+    '/auth/mfa/status': { get: { tags: ['Auth'], summary: 'Return MFA enrollment status for the current session', responses: { 200: { description: 'MFA status' }, 401: errorResponse } } },
+    '/auth/mfa/setup': { post: { tags: ['Auth'], summary: 'Generate encrypted TOTP enrollment material and one-time recovery codes', responses: { 200: { description: 'Enrollment material' }, 400: errorResponse } } },
+    '/auth/mfa/enable': { post: { tags: ['Auth'], summary: 'Confirm an authenticator code and enable MFA', requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['code'], properties: { code: { type: 'string', minLength: 6, maxLength: 24 } } } } } }, responses: { 200: { description: 'MFA enabled' }, 400: errorResponse } } },
+    '/auth/mfa/verify': { post: { tags: ['Auth'], summary: 'Complete an MFA challenge with TOTP or a single-use recovery code', security: [], requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['challengeToken', 'code'], properties: { challengeToken: { type: 'string' }, code: { type: 'string', minLength: 6, maxLength: 24 } } } } } }, responses: { 200: { description: 'Session issued after MFA verification' }, 401: errorResponse, 429: errorResponse } } },
     '/auth/activate': {
       post: {
         tags: ['Auth'],

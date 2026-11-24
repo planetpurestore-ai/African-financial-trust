@@ -14,7 +14,7 @@ Browser (vanilla ES modules)
         | HTTPS, same-origin cookies + CSRF header
         v
 Express 4 application  ──────────────►  Managed MySQL / TiDB
-  ├─ /api/v1/*  (JSON API, OpenAPI)         37 tables, migrations 001–007
+  ├─ /api/v1/*  (JSON API, OpenAPI)         40 tables, migrations 001–009
   ├─ /health, /ready                       audit chain + Trust Records
   ├─ static public/ (SPA shell)
   ├─ document extraction job worker
@@ -58,7 +58,7 @@ Supporting modules: authentication/sessions (`src/modules/auth`), access grants 
 
 ## 5. Data model
 
-37 tables in seven migrations:
+40 tables in nine migrations:
 
 - **Tenancy and identity:** `organisations`, `users`, `sessions`, `access_grants`, `api_keys`, `country_profiles`, `org_settings`.
 - **Business:** `businesses`, `business_identifiers`, `business_representatives`, `business_history`.
@@ -67,6 +67,7 @@ Supporting modules: authentication/sessions (`src/modules/auth`), access grants 
 - **Reconciliation:** `import_batches`, `transactions`, `reconciliations`, `reconciliation_matches`.
 - **Trust and audit:** `trust_records`, `evidence_items`, `verification_events`, `audit_logs`, `audit_chain_heads`.
 - **Platform:** `integrations`, `integration_credentials`, `processing_jobs`, `idempotency_keys`, `reports`.
+- **MFA:** `user_mfa`, `mfa_challenges`.
 
 Every business-scoped row carries `business_id`; tenant ownership is additionally enforced by `organisations` and `access_grants`. Foreign keys and indexes are defined in `db/migrations/`. The migration runner records filename and SHA-256 checksum in `schema_migrations` and refuses changed applied migrations.
 
