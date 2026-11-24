@@ -4,7 +4,7 @@ import {
   api, state, esc, money, num, pct, fmtDate, fmtDateTime, timeAgo, titleCase, statusChip, gradeBadge,
   provenanceLabel, empty, errorPanel, openModal, toast, navigate, requireBusiness, businessChooser,
   setCrumbs, setActiveNav,
-} from './core.js';
+} from './core.js?v=20261124-2';
 
 /* --------------------------------------------------------------- shared */
 
