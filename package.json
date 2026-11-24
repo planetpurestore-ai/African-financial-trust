@@ -1,0 +1,33 @@
+{
+  "name": "aft-trust-engine",
+  "version": "1.0.0",
+  "private": true,
+  "description": "African Financial Trust \u2014 Trust Engine: evidence verification, invoice verification, reconciliation and auditable Trust Records for African commerce.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node scripts/seed.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "test:unit": "node --test --test-concurrency=1 tests/unit/*.test.js",
+    "openapi": "node scripts/export-openapi.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.6.0",
+    "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.12.0",
+    "pdfkit": "^0.15.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}
