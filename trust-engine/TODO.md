@@ -4,13 +4,15 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 
 ## Foundation
 
-- [x] MySQL/TiDB schema (37 tables) with foreign keys and indexes.
-- [x] Idempotent migration runner with checksum history (001–007).
+- [x] MySQL/TiDB schema (38 tables) with foreign keys and indexes.
+- [x] Idempotent migration runner with checksum history (001–008).
 - [x] scrypt password hashing, hashed session tokens, API-key hashing, AES-256-GCM credential vault, hash-chained audit writer.
 
 ## Authentication, RBAC and tenancy
 
 - [x] Login/logout/me, six roles, session revocation, login rate limit.
+- [x] Secure administrator invitations: hash-only 48-hour tokens, invited status, 14-character password activation, confirmation matching and activation audit event.
+- [x] All nine synthetic live demo accounts disabled, sessions revoked and `user.disabled` events recorded.
 - [x] Organisation ownership and institution access grants; cross-tenant reads return 404.
 - [x] API keys with prefix lookup, hashing, expiry, revocation and scope enforcement.
 - [~] Failed-login lockout is a rate limit, not a per-account lockout.
@@ -78,7 +80,7 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 
 ## Tests and verification
 
-- [x] 30 integration tests against a real database.
+- [x] 33 integration tests against a real database, including invitation creation, pre-activation login refusal, expiry, mismatch, activation, reuse refusal and activation audit.
 - [x] 6 unit tests for hashing, dates and invoice status semantics.
 - [x] Malformed input, cross-tenant access, grant-scope and API-key-scope tests.
 - [x] "Unsupported evidence must not verify" test.
@@ -90,6 +92,6 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 - [x] Dockerfile, health check, production env contract, migration-on-boot.
 - [x] Deploy and verify live health, login, business data, Trust Record and hash.
 - [x] Documentation: architecture, API, methodology, security, deployment, integrations, testing and handover.
-- [x] Commit and push source to `planetpurestore-ai/African-financial-trust` with the landing page preserved; verified at remote commit `3c79fc8`.
+- [x] Commit and push source to `planetpurestore-ai/African-financial-trust` with the landing page preserved; invitation-flow delivery pushed at remote commit `92314b2`.
 - [ ] Cloudflare Pages rebuild of the landing page verified.
 - [ ] Custom domain, MFA, email provider, backup restore drill and production hardening.

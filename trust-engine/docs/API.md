@@ -64,11 +64,32 @@ List endpoints accept `limit` (max 100) and `offset`; most business-scoped lists
 | Method | Path | Purpose |
 | --- | --- | --- |
 | POST | `/auth/login` | Sign in; sets session and CSRF cookies |
+| POST | `/auth/activate` | Redeem a single-use invitation and set the initial password |
 | POST | `/auth/logout` | Revoke current session |
 | GET | `/auth/me` | Current user, organisation, role |
+| POST | `/auth/invitations` | Create a scoped, expiring invitation (administrator only) |
 | GET | `/api-keys` | List key metadata (never the secret) |
 | POST | `/api-keys` | Create a key; secret returned once |
 | DELETE | `/api-keys/{id}` | Revoke a key |
+
+### Invitation activation
+
+Administrators create invitations with an email, full name and role. The response contains a one-time activation token and URL because no transactional email provider is configured. Invitations expire after 48 hours and are stored only as token hashes. The invited user remains unable to sign in until activation.
+
+```bash
+curl -sS -X POST -H 'content-type: application/json' \\
+  -H 'x-aft-csrf: <session-csrf-token>' -b cookies.txt \\
+  -d '{"email":"admin@example.com","fullName":"AFT Administrator","role":"system_admin"}' \\
+  https://aftengine-dgfbrcn2.manus.space/api/v1/auth/invitations
+```
+
+Activation requires a password of at least 14 characters and an identical `confirmPassword` value. A redeemed, invalid or expired token returns 401; malformed or mismatched credentials return 422.
+
+```bash
+curl -sS -X POST -H 'content-type: application/json' \\
+  -d '{"token":"<one-time-token>","password":"<14+ character password>","confirmPassword":"<same password>","fullName":"AFT Administrator"}' \\
+  https://aftengine-dgfbrcn2.manus.space/api/v1/auth/activate
+```
 
 ### Businesses and access
 

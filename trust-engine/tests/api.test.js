@@ -45,6 +45,7 @@ let businessB;
 let documentA;
 let documentABuffer;
 let invoiceA;
+let invitation;
 
 function cookieValue(response, name) {
   const cookies = response.headers['set-cookie'] || [];
@@ -193,6 +194,101 @@ test('state-changing session requests require a matching CSRF token', async () =
 test('unauthenticated API calls are rejected', async () => {
   const response = await request(app).get('/api/v1/businesses');
   assert.equal(response.status, 401);
+});
+
+test('an authorised administrator can create an invitation and the invited account cannot sign in yet', async () => {
+  const response = await post(agentAdmin.agent, csrf.admin, '/api/v1/auth/invitations', {
+    email: 'new.admin@aft.test',
+    fullName: 'Invited Administrator',
+    role: 'institution_analyst',
+  });
+  assert.equal(response.status, 201, response.text);
+  invitation = response.body.data;
+  assert.equal(invitation.status, 'invited');
+  assert.match(invitation.activationUrl, /\/activate\//);
+  assert.ok(invitation.token);
+
+  const beforeActivation = await request(app).post('/api/v1/auth/login').send({
+    email: 'new.admin@aft.test',
+    password: PASSWORD,
+  });
+  assert.equal(beforeActivation.status, 403);
+  assert.equal(beforeActivation.body.error.message, 'This account is disabled');
+});
+
+test('activation rejects invalid, short and mismatched credentials without consuming the invitation', async () => {
+  const invalid = await request(app).post('/api/v1/auth/activate').send({
+    token: 'invalid-token-value-that-is-long-enough',
+    password: 'InvitedPass!2026#Strong',
+    confirmPassword: 'InvitedPass!2026#Strong',
+    fullName: 'Invited Administrator',
+  });
+  assert.equal(invalid.status, 401);
+
+  const expiredInvite = await post(agentAdmin.agent, csrf.admin, '/api/v1/auth/invitations', {
+    email: 'expired.admin@aft.test',
+    fullName: 'Expired Administrator',
+    role: 'institution_analyst',
+  });
+  assert.equal(expiredInvite.status, 201, expiredInvite.text);
+  await q(
+    `UPDATE user_invitations i JOIN users u ON u.id = i.user_id
+        SET i.expires_at = DATE_SUB(NOW(3), INTERVAL 1 MINUTE)
+      WHERE u.email = ?`,
+    ['expired.admin@aft.test'],
+  );
+  const expired = await request(app).post('/api/v1/auth/activate').send({
+    token: expiredInvite.body.data.token,
+    password: 'InvitedPass!2026#Strong',
+    confirmPassword: 'InvitedPass!2026#Strong',
+    fullName: 'Expired Administrator',
+  });
+  assert.equal(expired.status, 401);
+
+  const short = await request(app).post('/api/v1/auth/activate').send({
+    token: invitation.token,
+    password: 'short-passwd',
+    confirmPassword: 'short-passwd',
+    fullName: 'Invited Administrator',
+  });
+  assert.equal(short.status, 422);
+
+  const mismatch = await request(app).post('/api/v1/auth/activate').send({
+    token: invitation.token,
+    password: 'InvitedPass!2026#Strong',
+    confirmPassword: 'DifferentPass!2026#Strong',
+    fullName: 'Invited Administrator',
+  });
+  assert.equal(mismatch.status, 422);
+});
+
+test('a valid invitation activates the account, writes an audit event and cannot be reused', async () => {
+  const password = 'InvitedPass!2026#Strong';
+  const activated = await request(app).post('/api/v1/auth/activate').send({
+    token: invitation.token,
+    password,
+    confirmPassword: password,
+    fullName: 'Invited Administrator',
+  });
+  assert.equal(activated.status, 200, activated.text);
+  assert.equal(activated.body.data.activated, true);
+  assert.equal(activated.body.data.email, 'new.admin@aft.test');
+
+  const active = await one('SELECT id, status FROM users WHERE email = ?', ['new.admin@aft.test']);
+  assert.equal(active.status, 'active');
+  const audit = await one("SELECT action FROM audit_logs WHERE action = 'user.activated' AND entity_id = ?", [active.id]);
+  assert.equal(audit.action, 'user.activated');
+
+  const loginResponse = await request(app).post('/api/v1/auth/login').send({ email: 'new.admin@aft.test', password });
+  assert.equal(loginResponse.status, 200, loginResponse.text);
+
+  const reused = await request(app).post('/api/v1/auth/activate').send({
+    token: invitation.token,
+    password,
+    confirmPassword: password,
+    fullName: 'Invited Administrator',
+  });
+  assert.equal(reused.status, 401);
 });
 
 test('auditor accounts are read-only', async () => {
@@ -608,6 +704,8 @@ test('the OpenAPI contract is served and describes the v1 API', async () => {
   assert.equal(response.body.openapi, '3.1.0');
   assert.ok(response.body.paths['/businesses']);
   assert.ok(response.body.paths['/invoices/{id}/verify']);
+  assert.ok(response.body.paths['/auth/activate']);
+  assert.ok(response.body.paths['/auth/invitations']);
 });
 
 test('unknown API routes return a structured error rather than HTML', async () => {

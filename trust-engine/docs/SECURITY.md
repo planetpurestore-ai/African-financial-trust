@@ -12,6 +12,7 @@ This document describes what is implemented, what is assumed and what is not yet
 - API keys are `aft_<prefix>_<secret>`, stored as SHA-256 hashes with a lookup prefix, expiring optionally, revocable, and scope-limited.
 - Login is rate-limited (default 12 attempts/minute/process). Generic “Invalid email or password” responses avoid account enumeration.
 - Logout revokes the session row.
+- Administrator invitations use 32-byte random tokens stored only as SHA-256 hashes, expire after 48 hours, are single-use, and create an `invited` account that cannot sign in until activation. Activation requires a 14-character password and matching confirmation, hashes the password with scrypt, revokes no unrelated sessions, and writes an audit event.
 
 ### Authorisation and tenancy
 
@@ -55,8 +56,8 @@ This document describes what is implemented, what is assumed and what is not yet
 
 ## Known limitations and risks
 
-1. **Demo credentials are published.** The seeded accounts all use `AftDemo!2026#Kigali`. They must be disabled or rotated before any real user or data is onboarded. This is the highest-priority operational risk in the current deployment.
-2. **No MFA, SSO, email verification or password reset.** Accounts are provisioned by an administrator; there is no self-service recovery. A production deployment needs at least email verification and a reset flow, and ideally MFA for administrators.
+1. **Demo credentials remain published in source but are disabled in the live database.** The seeded accounts all use `AftDemo!2026#Kigali`; their sessions were revoked and login attempts return 403. The seed/demo records remain synthetic and must not be re-enabled or mixed with real data.
+2. **No MFA, SSO, email verification or password reset.** Secure administrator invitation/password activation is implemented, but there is no self-service recovery or email delivery. A production deployment needs at least MFA for administrators, email verification and a reset flow.
 3. **No external penetration test or certification.** The code has automated tests, not a security audit. Do not claim ISO 27001, SOC 2 or PCI compliance.
 4. **Application-layer encryption of business records is not implemented.** Business names, invoice amounts and documents are stored as ordinary database rows. The managed database provider's at-rest encryption is assumed but not independently verified. Integration credentials are the only application-encrypted secret.
 5. **Document blobs are not virus-scanned.** Signature checks validate file type, not safety. Add malware scanning (e.g. ClamAV) before accepting files from untrusted parties at scale.
@@ -74,8 +75,9 @@ This document describes what is implemented, what is assumed and what is not yet
 
 ## Production hardening checklist
 
-- [ ] Remove or rotate all demo accounts and the published password.
+- [x] Disable all live demo accounts, revoke their sessions and record the action in the audit chain. The demo password remains in source history and must never be used for real onboarding.
 - [ ] Set a unique `APP_ENCRYPTION_KEY` (32 bytes, base64/hex) and store it in the platform secret manager.
+- [x] Implement administrator invitation and one-time password activation with expiry, hash-only tokens, minimum password length and audit events.
 - [ ] Enforce MFA for `system_admin` and `institution_admin`; add email verification and password reset.
 - [ ] Put the app behind a WAF/edge rate limiter and restrict admin endpoints by network if possible.
 - [ ] Add malware scanning for uploads and a quarantine state.

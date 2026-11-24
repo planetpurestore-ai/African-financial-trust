@@ -12,15 +12,15 @@ This document is the honest status of the build. It distinguishes what is operat
 
 The Trust Engine is a working full-stack application. It has a real database, authentication, tenant isolation, document ingestion, deterministic extraction, invoice verification, transaction reconciliation, counterparty confirmation, versioned Trust Records, a hash-chained audit log, PDF/CSV reports, a role-based dashboard, a versioned API and automated tests. It is deployed and publicly reachable, and the live instance has been verified with a real login and a real Trust Record hash check.
 
-It is **not** a production-certified financial institution platform. No external registry, bank, mobile-money, payment or email provider is connected. The published demo accounts share a known password. There has been no penetration test, load test, backup restore drill or regulatory review. Those gaps are listed in sections 10–13.
+It is **not** a production-certified financial institution platform. No external registry, bank, mobile-money, payment or email provider is connected. The synthetic demo accounts were disabled in production, their sessions revoked and audit events recorded; their known password remains in source history and must never be used for real onboarding. There has been no penetration test, load test, backup restore drill or regulatory review. Secure administrator invitation/password activation is implemented, but MFA is still required before real customer onboarding.
 
 ## 2. What was delivered
 
 | Area | Status | Evidence |
 | --- | --- | --- |
 | Backend API | Operational | Express/Node 22, `/api/v1`, OpenAPI 3.1 at `/api/v1/openapi.json` |
-| Database | Operational | 37 tables, migrations 001–007, managed TiDB in hosting, MariaDB in tests |
-| Authentication | Operational | scrypt passwords, sessions, CSRF, API keys, roles, logout |
+| Database | Operational | 38 tables, migrations 001–008, managed TiDB in hosting, MariaDB in tests |
+| Authentication | Operational with MFA gap | scrypt passwords, sessions, CSRF, API keys, roles, logout, expiring single-use invitations and password activation |
 | Tenant isolation | Operational | Organisation ownership, institution grants, scope checks, cross-tenant tests |
 | Business identity | Operational (manual checks) | Business records, identifiers, representatives, history, manual verification decisions |
 | Document ingestion | Operational | PDF/CSV/XLSX/JSON/images, SHA-256, duplicate detection, private download, durable blobs |
@@ -34,9 +34,9 @@ It is **not** a production-certified financial institution platform. No external
 | Reports | Operational | PDF and CSV, generation date, sources, methodology, limitations |
 | Dashboard | Operational | Login, overview, businesses, documents, invoices, reconciliation, counterparties, integrations, audit, reports, system health, trust index |
 | Public confirmation page | Operational | `/confirm/:token` in the SPA |
-| Tests | Operational | 30 integration + 6 unit tests, all passing |
+| Tests | Operational | 33 integration + 6 unit tests, all passing |
 | Deployment | Operational | Public container at the live URL, managed database, `/health` 200 |
-| GitHub delivery | Operational | Source pushed to `main` at commit `3c79fc8`; landing page preserved at root and engine delivered under `trust-engine/`. |
+| GitHub delivery | Operational | Source pushed to `main` at commit `92314b2`; landing page preserved at root and engine delivered under `trust-engine/`. |
 | Email/SMS delivery | Not implemented | No provider configured; links are returned for manual sending |
 | AI extraction/scoring | Not implemented | No model is called; methodology is deterministic |
 | Registry/tax API integration | Not implemented | Manual verification workflow only |
@@ -44,12 +44,12 @@ It is **not** a production-certified financial institution platform. No external
 
 ## 3. Live verification performed
 
-The final published checkpoint is **`79ab2e1aee8b8a7ea8fc6fa0f3ae7742ea5e6108`** (`79ab2e1`), published on 24 November 2026 to the live URL above. On that origin:
+The final published checkpoint is **`15b3f6fc1916537129ec5a05c4f1c697fe4e8221`** (`15b3f6f`), published on 24 November 2026 to the live URL above. On that origin:
 
 - `GET /health` returned HTTP 200 with `{ "status": "ok", "database": true }`.
 - `GET /` returned the SPA shell (HTTP 200, `text/html`).
 - `GET /manus-routes.json` returned the declared route manifest.
-- Login as `finance@kigalifresh.rw` succeeded and returned a session and CSRF token.
+- The nine synthetic demo accounts were disabled and their active sessions revoked after the earlier live checks; they must no longer be used.
 - `GET /api/v1/businesses` returned the seeded Kigali Fresh business.
 - `GET /api/v1/businesses/{id}/trust-record` returned grade **A**, score **82.94**, version 1.
 - `GET /api/v1/trust-records/{id}/verify-hash` returned `valid: true` with identical stored and recomputed hashes.
@@ -86,9 +86,9 @@ Detailed documents:
 
 ### Database
 
-37 tables across seven migrations:
+38 tables across eight migrations:
 
-`organisations`, `users`, `sessions`, `access_grants`, `api_keys`, `country_profiles`, `org_settings`, `businesses`, `business_identifiers`, `business_representatives`, `business_history`, `counterparties`, `documents`, `document_extractions`, `extracted_fields`, `invoices`, `invoice_lines`, `invoice_status_history`, `purchase_orders`, `contracts`, `delivery_evidence`, `payment_records`, `import_batches`, `transactions`, `reconciliations`, `reconciliation_matches`, `trust_records`, `evidence_items`, `verification_events`, `audit_chain_heads`, `audit_logs`, `integrations`, `integration_credentials`, `processing_jobs`, `idempotency_keys`, `reports`, `document_blobs`.
+`organisations`, `users`, `sessions`, `access_grants`, `api_keys`, `country_profiles`, `org_settings`, `businesses`, `business_identifiers`, `business_representatives`, `business_history`, `counterparties`, `documents`, `document_extractions`, `extracted_fields`, `invoices`, `invoice_lines`, `invoice_status_history`, `purchase_orders`, `contracts`, `delivery_evidence`, `payment_records`, `import_batches`, `transactions`, `reconciliations`, `reconciliation_matches`, `trust_records`, `evidence_items`, `verification_events`, `audit_chain_heads`, `audit_logs`, `integrations`, `integration_credentials`, `processing_jobs`, `idempotency_keys`, `reports`, `document_blobs`, `user_invitations`.
 
 The schema is multi-country and multi-currency: `country_profiles` holds registration/tax labels and formats; monetary rows carry ISO currency codes. Rwanda is the seeded initial market, not a hardcoded constraint. There is no FX conversion engine; amounts are compared in their recorded currency.
 

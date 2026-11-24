@@ -57,7 +57,12 @@ router.post(
 const activationSchema = z.object({
   token: z.string().min(20).max(200),
   password: z.string().min(14).max(200),
+  confirmPassword: z.string().min(14).max(200),
   fullName: z.string().trim().min(2).max(255).optional(),
+}).superRefine((value, ctx) => {
+  if (value.password !== value.confirmPassword) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['confirmPassword'], message: 'Passwords do not match' });
+  }
 });
 
 router.post(

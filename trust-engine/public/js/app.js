@@ -59,7 +59,7 @@ async function renderActivation(token) {
     if (form.password.value !== form.confirm.value) { error.textContent = 'Passwords do not match.'; error.hidden = false; return; }
     const button = form.querySelector('button'); button.disabled = true; button.textContent = 'Activating…';
     try {
-      const result = await api('/auth/activate', { method: 'POST', body: { token, password: form.password.value, fullName: form.fullName.value } });
+      const result = await api('/auth/activate', { method: 'POST', body: { token, password: form.password.value, confirmPassword: form.confirm.value, fullName: form.fullName.value } });
       form.hidden = true;
       const success = document.getElementById('activation-success');
       success.hidden = false;
