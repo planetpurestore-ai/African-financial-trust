@@ -36,7 +36,7 @@ It is **not** a production-certified financial institution platform. No external
 | Public confirmation page | Operational | `/confirm/:token` in the SPA |
 | Tests | Operational | 30 integration + 6 unit tests, all passing |
 | Deployment | Operational | Public container at the live URL, managed database, `/health` 200 |
-| GitHub delivery | **Blocked** | Delivery tree prepared with landing page at root and engine under `trust-engine/`; local commit `024b288`. The available GitHub token is read-only, so the commit is not on the public repository. Source archive supplied. |
+| GitHub delivery | Operational | Source pushed to `main` at commit `3c79fc8`; landing page preserved at root and engine delivered under `trust-engine/`. |
 | Email/SMS delivery | Not implemented | No provider configured; links are returned for manual sending |
 | AI extraction/scoring | Not implemented | No model is called; methodology is deterministic |
 | Registry/tax API integration | Not implemented | Manual verification workflow only |
@@ -195,7 +195,7 @@ The highest-priority immediate action is to remove the published demo accounts/p
 10. **No custom domain.** The live URL is a Manus subdomain. Pointing a branded domain requires DNS/domain control.
 11. **No FX conversion.** Multi-currency records are stored and compared in their own currency; cross-currency netting is not implemented.
 12. **No AI.** This is deliberate, not a missing feature: deterministic rules are used for financial validation. AI extraction is not wired and is not claimed.
-13. **GitHub push blocked.** The complete source is prepared in `/home/ubuntu/aft-github` with the original landing page preserved at the repository root and the Trust Engine under `trust-engine/`. Local commit `024b288` contains the delivery; the final engine changes are synced into the working tree. Pushing to `planetpurestore-ai/African-financial-trust` returns HTTP 403 (`Resource not accessible by integration`) because the session's GitHub connector token has read-only repository contents permission. The repository owner must grant Contents: Read and write (or install/authorize a GitHub App with that permission) before pushing. The source archive is a complete alternative.
+13. **GitHub delivery completed.** The complete source is pushed to `planetpurestore-ai/African-financial-trust` at commit `3c79fc8`, with the original landing page preserved at the repository root and the Trust Engine under `trust-engine/`.
 
 ## 12. Deployment instructions
 

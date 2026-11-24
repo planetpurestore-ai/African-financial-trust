@@ -90,6 +90,6 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 - [x] Dockerfile, health check, production env contract, migration-on-boot.
 - [x] Deploy and verify live health, login, business data, Trust Record and hash.
 - [x] Documentation: architecture, API, methodology, security, deployment, integrations, testing and handover.
-- [ ] Commit and push source to `planetpurestore-ai/African-financial-trust` with the landing page preserved. Delivery tree and local commit are ready; push is blocked by the connector's read-only repository permission (HTTP 403). The owner must grant Contents: Read and write.
+- [x] Commit and push source to `planetpurestore-ai/African-financial-trust` with the landing page preserved; verified at remote commit `3c79fc8`.
 - [ ] Cloudflare Pages rebuild of the landing page verified.
 - [ ] Custom domain, MFA, email provider, backup restore drill and production hardening.

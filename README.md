@@ -8,9 +8,9 @@ This repository is the working Trust Engine implementation, not a marketing prot
 
 - Trust Engine: **https://aftengine-dgfbrcn2.manus.space**
 - Existing public landing page: https://africanfinancialtrust.pages.dev/
-- Intended source repository: https://github.com/planetpurestore-ai/African-financial-trust
+- Source repository: https://github.com/planetpurestore-ai/African-financial-trust
 
-> **GitHub push status:** the source is committed locally in the delivery tree (`024b288`, then synced with the final engine changes), but the GitHub connector available to this build session is read-only. The commit has **not** been pushed to the public repository. A complete source archive and the exact push commands are included in the handover. Do not assume the public repository currently contains this implementation.
+The complete delivery is pushed to the repository under `trust-engine/`; the original landing page remains at the repository root.
 
 The Trust Engine is a container deployment with a managed TiDB database. The landing page remains a separate static site. The landing page's “Access Trust Engine” link points at the deployed Trust Engine.
 
