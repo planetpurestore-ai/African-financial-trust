@@ -37,9 +37,10 @@ function businessLabel(b) {
 export async function overviewView(el) {
   setActiveNav('overview');
   setCrumbs([{ label: 'Trust Engine', href: '#/overview' }, { label: 'Overview' }]);
-  const [overview, businesses] = await Promise.all([
+  const [overview, businesses, mfa] = await Promise.all([
     api('/system/overview').then((r) => r.data),
     api('/businesses?limit=100').then((r) => r.data),
+    api('/auth/mfa/status').then((r) => r.data).catch(() => ({ enabled: false })),
   ]);
   const counts = overview.counts || {};
   const gradeCounts = businesses.reduce((acc, b) => { const g = b.latest_grade || '—'; acc[g] = (acc[g] || 0) + 1; return acc; }, {});
@@ -55,6 +56,8 @@ export async function overviewView(el) {
       actions: canWrite() ? `<button class="btn btn-primary" data-action="new-business">Register business</button>` : '',
     })}
     <div class="banner-strip"><span class="dot"></span> ${esc(state.org?.name || '')} · ${esc(titleCase(state.role))} · data as of ${esc(fmtDateTime(new Date()))}</div>
+    <div class="notice warn" style="margin:14px 0"><span><strong>Demonstration data.</strong> The businesses and records currently shown are synthetic operational fixtures. Do not treat them as real customer data or onboard real records until production launch gates are complete.</span></div>
+    ${isAdmin() ? `<div class="card pad section" style="border-left:3px solid var(--gold)"><div class="card-head"><div><h3>Account security</h3><p class="small muted">Protect this administrator account with an authenticator app. Recovery codes are shown only once.</p></div>${mfa.enabled ? statusChip('enabled', 'MFA enabled') : '<button class="btn btn-primary btn-sm" data-action="mfa-setup-overview">Set up MFA</button>'}</div><div id="mfa-overview-panel"></div></div>` : ''}
     <div class="grid k4">
       ${kpi('Businesses under coverage', num(counts.businesses), `${verification.reduce((s, v) => s + (v.status === 'verified' ? v.count : 0), 0)} independently verified`)}
       ${kpi('Invoice value recorded', money(counts.invoice_value, 'RWF'), `${num(counts.invoices)} invoices across all currencies`, 'teal')}
@@ -133,6 +136,20 @@ export async function overviewView(el) {
   el.querySelectorAll('[data-href]').forEach((row) => row.addEventListener('click', () => navigate(row.dataset.href)));
   const newBtn = el.querySelector('[data-action="new-business"]');
   if (newBtn) newBtn.addEventListener('click', () => businessModal());
+  el.querySelector('[data-action="mfa-setup-overview"]')?.addEventListener('click', async (event) => {
+    event.currentTarget.disabled = true;
+    try {
+      const setup = (await api('/auth/mfa/setup', { method: 'POST', body: {} })).data;
+      const panel = el.querySelector('#mfa-overview-panel');
+      panel.innerHTML = `<div class="notice info" style="margin-top:12px"><span>Scan this otpauth URI in your authenticator app, or enter the secret manually.</span></div><div class="hash-box" style="margin-top:10px;word-break:break-all">${esc(setup.otpauthUri)}</div><p class="small muted" style="margin-top:8px">Manual secret: <span class="mono">${esc(setup.secret)}</span></p><p class="small muted">Save these recovery codes securely now:</p><div class="hash-box mono">${setup.recoveryCodes.map((code) => esc(code)).join('<br>')}</div><form id="mfa-enable-overview-form" style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="field"><span>Current authenticator code</span><input name="code" inputmode="numeric" minlength="6" maxlength="6" required></label><button class="btn btn-primary" type="submit">Enable MFA</button></form>`;
+      panel.querySelector('form').addEventListener('submit', async (submitEvent) => {
+        submitEvent.preventDefault();
+        const form = submitEvent.currentTarget;
+        try { await api('/auth/mfa/enable', { method: 'POST', body: { code: form.code.value } }); toast('MFA enabled for this account.'); window.dispatchEvent(new HashChangeEvent('hashchange')); }
+        catch (error) { toast(error.message, 'error'); }
+      });
+    } catch (error) { toast(error.message, 'error'); event.currentTarget.disabled = false; }
+  });
 }
 
 /* ------------------------------------------------------------ businesses */
