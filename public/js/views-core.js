@@ -4,7 +4,7 @@ import {
   api, state, esc, money, num, pct, fmtDate, fmtDateTime, timeAgo, titleCase, statusChip, gradeBadge,
   provenanceLabel, empty, errorPanel, openModal, toast, navigate, requireBusiness, businessChooser,
   setCrumbs, setActiveNav,
-} from './core.js?v=20261124-2';
+} from './core.js?v=20261124-3';
 
 /* --------------------------------------------------------------- shared */
 
@@ -137,10 +137,13 @@ export async function overviewView(el) {
   const newBtn = el.querySelector('[data-action="new-business"]');
   if (newBtn) newBtn.addEventListener('click', () => businessModal());
   el.querySelector('[data-action="mfa-setup-overview"]')?.addEventListener('click', async (event) => {
-    event.currentTarget.disabled = true;
+    const button = event.currentTarget;
+    const panel = el.querySelector('#mfa-overview-panel');
+    button.disabled = true;
+    button.textContent = 'Preparing…';
+    panel.innerHTML = '<div class="notice info" style="margin-top:12px"><span>Preparing your secure MFA setup. Please wait…</span></div>';
     try {
       const setup = (await api('/auth/mfa/setup', { method: 'POST', body: {} })).data;
-      const panel = el.querySelector('#mfa-overview-panel');
       panel.innerHTML = `<div class="notice info" style="margin-top:12px"><span>Scan this otpauth URI in your authenticator app, or enter the secret manually.</span></div><div class="hash-box" style="margin-top:10px;word-break:break-all">${esc(setup.otpauthUri)}</div><p class="small muted" style="margin-top:8px">Manual secret: <span class="mono">${esc(setup.secret)}</span></p><p class="small muted">Save these recovery codes securely now:</p><div class="hash-box mono">${setup.recoveryCodes.map((code) => esc(code)).join('<br>')}</div><form id="mfa-enable-overview-form" style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="field"><span>Current authenticator code</span><input name="code" inputmode="numeric" minlength="6" maxlength="6" required></label><button class="btn btn-primary" type="submit">Enable MFA</button></form>`;
       panel.querySelector('form').addEventListener('submit', async (submitEvent) => {
         submitEvent.preventDefault();
@@ -148,7 +151,7 @@ export async function overviewView(el) {
         try { await api('/auth/mfa/enable', { method: 'POST', body: { code: form.code.value } }); toast('MFA enabled for this account.'); window.dispatchEvent(new HashChangeEvent('hashchange')); }
         catch (error) { toast(error.message, 'error'); }
       });
-    } catch (error) { toast(error.message, 'error'); event.currentTarget.disabled = false; }
+    } catch (error) { panel.innerHTML = `<div class="notice error" style="margin-top:12px"><span>${esc(error.message || 'MFA setup could not be started. Please try again.')}</span></div>`; button.disabled = false; button.textContent = 'Set up MFA'; }
   });
 }
 

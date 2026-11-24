@@ -1,8 +1,8 @@
-import { api, state, esc, money, fmtDate, titleCase, statusChip, toast, route, startRouter, renderShell, renderRoute, setCrumbs } from './core.js?v=20261124-2';
-import { overviewView, businessesView, businessDetailView, documentsView, invoicesView } from './views-core.js?v=20261124-2';
+import { api, state, esc, money, fmtDate, titleCase, statusChip, toast, route, startRouter, renderShell, renderRoute, setCrumbs } from './core.js?v=20261124-3';
+import { overviewView, businessesView, businessDetailView, documentsView, invoicesView } from './views-core.js?v=20261124-3';
 import {
   reconciliationView, counterpartiesView, integrationsView, auditView, reportsView, systemView, trustIndexView,
-} from './views-ops.js?v=20261124-2';
+} from './views-ops.js?v=20261124-3';
 
 const $ = (id) => document.getElementById(id);
 

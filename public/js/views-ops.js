@@ -3,8 +3,8 @@
 import {
   api, state, esc, money, num, pct, fmtDate, fmtDateTime, timeAgo, titleCase, statusChip, gradeBadge,
   empty, openModal, toast, navigate, requireBusiness, businessChooser, setCrumbs, setActiveNav, closeModal,
-} from './core.js?v=20261124-2';
-import { pageHead } from './views-core.js?v=20261124-2';
+} from './core.js?v=20261124-3';
+import { pageHead } from './views-core.js?v=20261124-3';
 
 const canWrite = () => state.role !== 'auditor';
 const canManage = () => ['system_admin', 'institution_admin', 'business_admin'].includes(state.role);
