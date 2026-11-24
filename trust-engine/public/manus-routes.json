@@ -14,6 +14,7 @@
     { "path": "/reports", "title": "Reports" },
     { "path": "/integrations", "title": "Integrations" },
     { "path": "/system", "title": "System health" },
-    { "path": "/confirm/:token", "title": "Counterparty confirmation" }
+    { "path": "/confirm/:token", "title": "Counterparty confirmation" },
+    { "path": "/activate/:token", "title": "Administrator activation" }
   ]
 }

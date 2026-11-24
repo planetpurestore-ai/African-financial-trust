@@ -13,6 +13,10 @@ async function boot() {
     renderPublicConfirmation(location.pathname.split('/').filter(Boolean)[1]);
     return;
   }
+  if (location.pathname.startsWith('/activate/')) {
+    renderActivation(location.pathname.split('/').filter(Boolean)[1]);
+    return;
+  }
   try {
     const me = (await api('/auth/me')).data;
     await enterApp(me);
@@ -22,6 +26,46 @@ async function boot() {
       $('boot').innerHTML = `<div class="boot-mark">AFT</div><p>Trust Engine</p><div style="max-width:360px;margin-top:14px;font-size:12px;color:#d7a79e">${esc(error.message)}</div>`;
     }
   }
+}
+
+async function renderActivation(token) {
+  document.body.innerHTML = `
+    <div class="login" style="grid-template-columns:1fr;min-height:100vh">
+      <div style="max-width:560px;margin:0 auto;padding:48px 20px;width:100%">
+        <div class="brand-lockup" style="margin-bottom:28px">
+          <div class="brand-mark" style="border-color:#c69a43;color:#c69a43">AFT</div>
+          <div><div class="brand-name">African Financial Trust</div><div class="brand-sub">Trust Engine</div></div>
+        </div>
+        <div class="card pad">
+          <p class="eyebrow">Secure account activation</p>
+          <h2>Create your administrator password</h2>
+          <p class="muted">This invitation is single-use and expires after 48 hours. Use a unique password of at least 14 characters.</p>
+          <form id="activation-form" class="login-form">
+            <label class="field"><span>Full name</span><input name="fullName" autocomplete="name" required placeholder="Your full name"></label>
+            <label class="field"><span>Password</span><input name="password" type="password" autocomplete="new-password" minlength="14" required></label>
+            <label class="field"><span>Confirm password</span><input name="confirm" type="password" autocomplete="new-password" minlength="14" required></label>
+            <div class="login-error" id="activation-error" role="alert" hidden></div>
+            <button class="btn btn-primary btn-block" type="submit">Activate account</button>
+          </form>
+          <div id="activation-success" hidden></div>
+        </div>
+      </div>
+    </div>`;
+  const form = document.getElementById('activation-form');
+  const error = document.getElementById('activation-error');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    error.hidden = true;
+    if (form.password.value !== form.confirm.value) { error.textContent = 'Passwords do not match.'; error.hidden = false; return; }
+    const button = form.querySelector('button'); button.disabled = true; button.textContent = 'Activating…';
+    try {
+      const result = await api('/auth/activate', { method: 'POST', body: { token, password: form.password.value, fullName: form.fullName.value } });
+      form.hidden = true;
+      const success = document.getElementById('activation-success');
+      success.hidden = false;
+      success.innerHTML = `<p class="eyebrow">Account activated</p><h3>You can now sign in</h3><p class="muted">Your administrator account for ${esc(result.data.email)} is active. Return to the sign-in page to continue.</p><a class="btn btn-primary" href="/">Go to sign in</a>`;
+    } catch (e) { error.textContent = e.message; error.hidden = false; button.disabled = false; button.textContent = 'Activate account'; }
+  });
 }
 
 function showLogin() {

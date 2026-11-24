@@ -88,6 +88,67 @@ export async function createUser(auth, input) {
   });
 }
 
+export async function createInvitation(auth, input) {
+  return withTransaction(async (conn) => {
+    const email = input.email.toLowerCase().trim();
+    const [existing] = await conn.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.length) throw badRequest('A user with that email already exists', { field: 'email' });
+    const userId = ulid();
+    const invitationId = ulid();
+    const token = randomToken(32);
+    const expires = new Date(Date.now() + 48 * 3600_000);
+    await conn.query(
+      `INSERT INTO users (id, org_id, email, password_hash, full_name, role, status)
+       VALUES (?, ?, ?, ?, ?, ?, 'invited')`,
+      [userId, auth.org.id, email, hashPassword(randomToken(32)), input.fullName, input.role],
+    );
+    await conn.query(
+      `INSERT INTO user_invitations (id, user_id, email, token_hash, expires_at, created_by_user_id)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [invitationId, userId, email, hashToken(token), expires, auth.user?.id ?? null],
+    );
+    await writeAudit(conn, {
+      orgId: auth.org.id,
+      actorType: auth.type,
+      actorId: auth.user?.id,
+      action: 'user.invited',
+      entityType: 'user',
+      entityId: userId,
+      metadata: { email, role: input.role, invitationId, expiresAt: expires.toISOString() },
+    });
+    return { id: userId, email, fullName: input.fullName, role: input.role, status: 'invited', invitationId, token, expiresAt: expires };
+  });
+}
+
+export async function activateInvitation({ token, password, fullName }) {
+  return withTransaction(async (conn) => {
+    const [rows] = await conn.query(
+      `SELECT i.*, u.org_id, u.status AS user_status
+         FROM user_invitations i JOIN users u ON u.id = i.user_id
+        WHERE i.token_hash = ? AND i.used_at IS NULL AND i.expires_at > NOW(3)
+        FOR UPDATE`,
+      [hashToken(token)],
+    );
+    const invitation = rows[0];
+    if (!invitation || invitation.user_status !== 'invited') throw unauthorized('This invitation is invalid or expired');
+    const fields = ["password_hash = ?", "status = 'active'"];
+    const params = [hashPassword(password)];
+    if (fullName) { fields.push('full_name = ?'); params.push(fullName.trim()); }
+    params.push(invitation.user_id);
+    await conn.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, params);
+    await conn.query('UPDATE user_invitations SET used_at = NOW(3) WHERE id = ?', [invitation.id]);
+    await writeAudit(conn, {
+      orgId: invitation.org_id,
+      actorType: 'invitation',
+      action: 'user.activated',
+      entityType: 'user',
+      entityId: invitation.user_id,
+      metadata: { email: invitation.email, invitationId: invitation.id },
+    });
+    return { activated: true, email: invitation.email };
+  });
+}
+
 export async function updateUser(auth, userId, input) {
   return withTransaction(async (conn) => {
     const [rows] = await conn.query('SELECT * FROM users WHERE id = ? AND org_id = ? FOR UPDATE', [userId, auth.org.id]);

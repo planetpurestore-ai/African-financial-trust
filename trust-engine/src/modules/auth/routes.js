@@ -7,7 +7,9 @@ import { parse } from '../../lib/validate.js';
 import { loginRateLimit } from '../../middleware/rateLimit.js';
 import { authenticate, requireAuth, requireRole } from '../../middleware/auth.js';
 import {
+  activateInvitation,
   changePassword,
+  createInvitation,
   createUser,
   currentUser,
   listOrganisations,
@@ -49,6 +51,21 @@ router.post(
       }),
     ]);
     res.json({ data: { user: result.user, org: result.org, csrfToken: result.csrf } });
+  }),
+);
+
+const activationSchema = z.object({
+  token: z.string().min(20).max(200),
+  password: z.string().min(14).max(200),
+  fullName: z.string().trim().min(2).max(255).optional(),
+});
+
+router.post(
+  '/activate',
+  loginRateLimit,
+  asyncHandler(async (req, res) => {
+    const input = parse(activationSchema, req.body);
+    res.json({ data: await activateInvitation(input) });
   }),
 );
 
@@ -106,6 +123,28 @@ const createUserSchema = z.object({
   password: z.string().min(12).max(200),
   role: z.enum(['institution_admin', 'institution_analyst', 'business_admin', 'business_user', 'auditor']),
 });
+
+const invitationSchema = z.object({
+  email,
+  fullName: z.string().trim().min(2).max(255),
+  role: z.enum(['system_admin', 'institution_admin', 'institution_analyst', 'business_admin', 'business_user', 'auditor']),
+});
+
+router.post(
+  '/invitations',
+  authenticate,
+  requireAuth,
+  requireRole('system_admin', 'institution_admin', 'business_admin'),
+  asyncHandler(async (req, res) => {
+    const input = parse(invitationSchema, req.body);
+    if (input.role === 'system_admin' && req.auth.role !== 'system_admin') {
+      return res.status(403).json({ error: { code: 'forbidden', message: 'Only a system administrator may invite system administrators' } });
+    }
+    const result = await createInvitation(req.auth, input);
+    const origin = config.publicOrigin || `${req.protocol}://${req.get('host')}`;
+    res.status(201).json({ data: { ...result, activationUrl: `${origin}/activate/${result.token}` } });
+  }),
+);
 
 router.post(
   '/users',

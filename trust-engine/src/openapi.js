@@ -148,6 +148,29 @@ export const openApiDocument = {
         responses: { 200: { description: 'Signed in' }, 401: errorResponse, 429: errorResponse },
       },
     },
+    '/auth/activate': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Redeem a single-use invitation and set the initial password',
+        security: [],
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { type: 'object', required: ['token', 'password'], properties: { token: { type: 'string' }, password: { type: 'string', minLength: 14 }, fullName: { type: 'string' } } } } },
+        },
+        responses: { 200: { description: 'Account activated' }, 401: errorResponse, 429: errorResponse },
+      },
+    },
+    '/auth/invitations': {
+      post: {
+        tags: ['Auth'],
+        summary: 'Create a scoped, expiring user invitation',
+        requestBody: {
+          required: true,
+          content: { 'application/json': { schema: { type: 'object', required: ['email', 'fullName', 'role'], properties: { email: { type: 'string' }, fullName: { type: 'string' }, role: { type: 'string' } } } } },
+        },
+        responses: { 201: { description: 'Invitation created' }, 403: errorResponse },
+      },
+    },
     '/auth/logout': { post: { tags: ['Auth'], summary: 'Revoke the current session', responses: { 200: { description: 'Signed out' } } } },
     '/auth/me': { get: { tags: ['Auth'], summary: 'Current user, organisation and role', responses: { 200: { description: 'Current principal' }, 401: errorResponse } } },
     '/businesses': {
