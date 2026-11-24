@@ -8,7 +8,9 @@ This repository is the working Trust Engine implementation, not a marketing prot
 
 - Trust Engine: **https://aftengine-dgfbrcn2.manus.space**
 - Existing public landing page: https://africanfinancialtrust.pages.dev/
-- Source repository: https://github.com/planetpurestore-ai/African-financial-trust
+- Intended source repository: https://github.com/planetpurestore-ai/African-financial-trust
+
+> **GitHub push status:** the source is committed locally in the delivery tree (`024b288`, then synced with the final engine changes), but the GitHub connector available to this build session is read-only. The commit has **not** been pushed to the public repository. A complete source archive and the exact push commands are included in the handover. Do not assume the public repository currently contains this implementation.
 
 The Trust Engine is a container deployment with a managed TiDB database. The landing page remains a separate static site. The landing page's “Access Trust Engine” link points at the deployed Trust Engine.
 
@@ -28,7 +30,7 @@ The Trust Engine is a container deployment with a managed TiDB database. The lan
 - PDF and CSV reports with generation date, sources, methodology and limitations.
 - Dashboard views backed by live database queries: overview, businesses, documents, invoices, reconciliation, counterparties, integrations, audit, reports, system health and trust index.
 - OpenAPI 3.1 contract at `/api/v1/openapi.json`, versioned `/api/v1` API and unauthenticated `/health` and `/ready` probes.
-- 28 integration tests and 6 unit tests, run against a real MySQL/MariaDB database.
+- 30 integration tests and 6 unit tests, run against a real MySQL/MariaDB database.
 
 ## What is not operational
 

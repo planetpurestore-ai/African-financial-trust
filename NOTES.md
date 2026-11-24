@@ -14,8 +14,8 @@ This file is for maintainers. The authoritative delivery status is in [docs/HAND
 
 ## Current state (24 November 2026)
 
-- Live: https://aftengine-dgfbrcn2.manus.space
-- Source: https://github.com/planetpurestore-ai/African-financial-trust (`trust-engine/`), landing page preserved at repository root.
+- Live: https://aftengine-dgfbrcn2.manus.space (published checkpoint `79ab2e1`).
+- Delivery tree: `/home/ubuntu/aft-github` — landing page at repository root, engine under `trust-engine/`. **Not pushed:** the GitHub connector token is read-only and returns 403 on push. See HANDOVER §11 item 13.
 - Tests: 30 integration + 6 unit, all passing.
 - Managed demo Trust Records were regenerated after the canonical-JSON hashing fix; all four verify.
 - Document bytes are stored in `document_blobs`; local filesystem keys are legacy fallback only.

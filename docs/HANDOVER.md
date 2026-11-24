@@ -36,7 +36,7 @@ It is **not** a production-certified financial institution platform. No external
 | Public confirmation page | Operational | `/confirm/:token` in the SPA |
 | Tests | Operational | 30 integration + 6 unit tests, all passing |
 | Deployment | Operational | Public container at the live URL, managed database, `/health` 200 |
-| GitHub delivery | Operational | Source committed to the repository under `trust-engine/`; landing page preserved |
+| GitHub delivery | **Blocked** | Delivery tree prepared with landing page at root and engine under `trust-engine/`; local commit `024b288`. The available GitHub token is read-only, so the commit is not on the public repository. Source archive supplied. |
 | Email/SMS delivery | Not implemented | No provider configured; links are returned for manual sending |
 | AI extraction/scoring | Not implemented | No model is called; methodology is deterministic |
 | Registry/tax API integration | Not implemented | Manual verification workflow only |
@@ -44,7 +44,7 @@ It is **not** a production-certified financial institution platform. No external
 
 ## 3. Live verification performed
 
-On the deployed origin:
+The final published checkpoint is **`79ab2e1aee8b8a7ea8fc6fa0f3ae7742ea5e6108`** (`79ab2e1`), published on 24 November 2026 to the live URL above. On that origin:
 
 - `GET /health` returned HTTP 200 with `{ "status": "ok", "database": true }`.
 - `GET /` returned the SPA shell (HTTP 200, `text/html`).
@@ -53,6 +53,10 @@ On the deployed origin:
 - `GET /api/v1/businesses` returned the seeded Kigali Fresh business.
 - `GET /api/v1/businesses/{id}/trust-record` returned grade **A**, score **82.94**, version 1.
 - `GET /api/v1/trust-records/{id}/verify-hash` returned `valid: true` with identical stored and recomputed hashes.
+- A business user received HTTP 404 when requesting another tenant's business by ID.
+- An institution user saw only the two businesses covered by its grants; document access outside the grant scope returned HTTP 404.
+- A PDF Trust Record report generated successfully and downloaded as a valid `%PDF-` file (4,474 bytes).
+- `GET /api/v1/audit/verify` returned `valid: true` over 15 chained audit entries.
 - The site became publicly accessible after an explicit visibility confirmation.
 
 The seeded businesses and their Trust grades after the final regeneration are:
@@ -191,13 +195,14 @@ The highest-priority immediate action is to remove the published demo accounts/p
 10. **No custom domain.** The live URL is a Manus subdomain. Pointing a branded domain requires DNS/domain control.
 11. **No FX conversion.** Multi-currency records are stored and compared in their own currency; cross-currency netting is not implemented.
 12. **No AI.** This is deliberate, not a missing feature: deterministic rules are used for financial validation. AI extraction is not wired and is not claimed.
+13. **GitHub push blocked.** The complete source is prepared in `/home/ubuntu/aft-github` with the original landing page preserved at the repository root and the Trust Engine under `trust-engine/`. Local commit `024b288` contains the delivery; the final engine changes are synced into the working tree. Pushing to `planetpurestore-ai/African-financial-trust` returns HTTP 403 (`Resource not accessible by integration`) because the session's GitHub connector token has read-only repository contents permission. The repository owner must grant Contents: Read and write (or install/authorize a GitHub App with that permission) before pushing. The source archive is a complete alternative.
 
 ## 12. Deployment instructions
 
 Short version:
 
 ```bash
-git clone https://github.com/planetpurestore-ai/African-financial-trust.git
+# After the owner pushes the prepared delivery tree, or from the supplied archive:
 cd African-financial-trust/trust-engine
 npm ci
 cp .env.example .env
