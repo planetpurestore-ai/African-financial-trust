@@ -1,0 +1,20 @@
+{
+  "routes": [
+    { "path": "/", "title": "Sign in" },
+    { "path": "/overview", "title": "Overview" },
+    { "path": "/businesses", "title": "Businesses" },
+    { "path": "/businesses/:id", "title": "Business record" },
+    { "path": "/businesses/:id/:tab", "title": "Business record" },
+    { "path": "/documents", "title": "Documents" },
+    { "path": "/invoices", "title": "Invoices" },
+    { "path": "/reconciliation", "title": "Reconciliation" },
+    { "path": "/counterparties", "title": "Counterparties" },
+    { "path": "/trust", "title": "Trust index" },
+    { "path": "/audit", "title": "Audit trail" },
+    { "path": "/reports", "title": "Reports" },
+    { "path": "/integrations", "title": "Integrations" },
+    { "path": "/system", "title": "System health" },
+    { "path": "/confirm/:token", "title": "Counterparty confirmation" },
+    { "path": "/activate/:token", "title": "Administrator activation" }
+  ]
+}

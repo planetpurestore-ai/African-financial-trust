@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://africanfinancialtrust.pages.dev/sitemap.xml

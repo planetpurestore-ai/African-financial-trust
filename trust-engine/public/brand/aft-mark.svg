@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="African Financial Trust">
+  <rect width="512" height="512" rx="88" fill="#071b2b"/>
+  <rect x="38" y="38" width="436" height="436" rx="60" fill="none" stroke="#c69a43" stroke-width="6"/>
+  <path d="M256 96 388 392h-52l-31-76H207l-31 76h-52L256 96Zm0 106-32 78h64l-32-78Z" fill="#f7f5ef"/>
+  <path d="M166 416h180" stroke="#c69a43" stroke-width="10" stroke-linecap="round"/>
+  <text x="256" y="470" text-anchor="middle" font-family="Georgia, serif" font-size="26" letter-spacing="8" fill="#c69a43">AFT</text>
+</svg>
