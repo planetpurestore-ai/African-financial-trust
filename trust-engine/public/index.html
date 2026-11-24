@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>African Financial Trust — Trust Engine</title>
+<meta name="description" content="Evidence-based financial trust verification for African businesses. Verify identity, invoices, delivery and payment evidence.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<a class="skip-link" href="#view">Skip to content</a>
+
+<div id="boot" class="boot">
+  <div class="boot-mark">AFT</div>
+  <p>Trust Engine</p>
+</div>
+
+<section id="login-screen" class="login" hidden>
+  <div class="login-brand">
+    <div class="brand-lockup">
+      <div class="brand-mark">AFT</div>
+      <div>
+        <div class="brand-name">African Financial Trust</div>
+        <div class="brand-sub">Trust Engine</div>
+      </div>
+    </div>
+    <div class="login-statement">
+      <p class="eyebrow light">Financial trust infrastructure</p>
+      <h1>Evidence, not assertions.</h1>
+      <p class="lede">A trust record is assembled from registered identity, verified invoices, purchase orders, delivery notes and reconciled payments. Every claim carries its provenance.</p>
+      <div class="login-points">
+        <div><span>01</span> Identity and registration evidence</div>
+        <div><span>02</span> Invoice integrity and duplicate detection</div>
+        <div><span>03</span> Payment reconciliation against bank records</div>
+        <div><span>04</span> Tamper-evident, versioned audit history</div>
+      </div>
+    </div>
+    <p class="login-foot">Kigali · Nairobi · Accra · Lagos · Johannesburg</p>
+  </div>
+  <div class="login-panel">
+    <form id="login-form" class="login-form" novalidate>
+      <p class="eyebrow">Institutional access</p>
+      <h2>Sign in</h2>
+      <p class="muted">Access is scoped to your organisation. Business records are visible only through an active mandate or access grant.</p>
+      <label class="field">
+        <span>Work email</span>
+        <input type="email" name="email" autocomplete="username" required placeholder="name@institution.com">
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••••••">
+      </label>
+      <div class="login-error" id="login-error" role="alert" hidden></div>
+      <button class="btn btn-primary btn-block" type="submit">Sign in to the Trust Engine</button>
+      <p class="login-note">Sessions expire after 12 hours. All actions are written to the organisation's audit chain.</p>
+    </form>
+    <div class="login-demo" id="login-demo" hidden>
+      <p class="eyebrow">Demonstration environment</p>
+      <p>Seeded accounts are listed in the handover documentation. Change all seeded passwords before production use.</p>
+    </div>
+  </div>
+</section>
+
+<div id="app" class="app" hidden>
+  <aside class="rail">
+    <div class="rail-brand">
+      <div class="brand-mark small">AFT</div>
+      <div>
+        <div class="brand-name">African Financial Trust</div>
+        <div class="brand-sub">Trust Engine</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav" aria-label="Primary"></nav>
+    <div class="rail-foot">
+      <div class="rail-org" id="rail-org"></div>
+      <div class="rail-note">Independent verification infrastructure. AFT is not a lender, bank or credit rating agency.</div>
+    </div>
+  </aside>
+
+  <div class="frame">
+    <header class="topbar">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="topbar-actions">
+        <label class="context-select">
+          <span>Business context</span>
+          <select id="business-context"></select>
+        </label>
+        <div class="user-chip" id="user-chip"></div>
+      </div>
+    </header>
+    <main id="view" class="view" tabindex="-1"></main>
+  </div>
+</div>
+
+<div id="modal-root" class="modal-root" hidden></div>
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
