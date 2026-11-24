@@ -9,6 +9,7 @@
 | Container image | `Dockerfile` at repository root |
 | Health check | `GET /health` (unauthenticated, 200 when the database responds) |
 | Database migrations | Applied automatically at container start unless `AUTO_MIGRATE=false` |
+| Published checkpoint | `79ab2e1aee8b8a7ea8fc6fa0f3ae7742ea5e6108` (`79ab2e1`), published 24 November 2026 |
 | Existing landing page | https://africanfinancialtrust.pages.dev/ (separate static site) |
 
 The published container is public. The first publication was private; public visibility was explicitly confirmed by the owner. The app has its own login screen; platform OAuth is not used for application accounts.
@@ -70,6 +71,8 @@ The project is configured with:
 - `runtime.dev-commands`: `aft-engine` → `npm start`, port 3000
 
 Publication is a separate step from a Git checkpoint. The live version corresponds to the published checkpoint recorded in the project’s Version history. To publish a new checkpoint, use the Dashboard Publish control or the Webdev publish operation after pushing to canonical `main`.
+
+The live deployment was last published from checkpoint `79ab2e1`. A later documentation-only commit does not change runtime behaviour; republish it if byte-for-byte version alignment is required.
 
 ## Database
 
