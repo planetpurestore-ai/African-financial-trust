@@ -29,6 +29,7 @@ const { q, one, closePool } = await import('../src/db/pool.js');
 const { runMigrations } = await import('../src/db/migrate.js');
 const { ulid } = await import('../src/lib/ids.js');
 const { hashPassword, sha256Hex } = await import('../src/lib/crypto.js');
+const { totpCode } = await import('../src/lib/totp.js');
 
 const app = createApp();
 const PASSWORD = 'TestPass!2026#Strong';
@@ -194,6 +195,35 @@ test('state-changing session requests require a matching CSRF token', async () =
 test('unauthenticated API calls are rejected', async () => {
   const response = await request(app).get('/api/v1/businesses');
   assert.equal(response.status, 401);
+});
+
+test('MFA enrollment gates login, accepts TOTP and consumes recovery codes', async () => {
+  const status = await agentAdmin.agent.get('/api/v1/auth/mfa/status');
+  assert.equal(status.status, 200);
+  assert.equal(status.body.data.enabled, false);
+  const setup = await post(agentAdmin.agent, csrf.admin, '/api/v1/auth/mfa/setup');
+  assert.equal(setup.status, 200, setup.text);
+  assert.equal(setup.body.data.recoveryCodes.length, 10);
+  const secret = setup.body.data.secret;
+  const enabled = await post(agentAdmin.agent, csrf.admin, '/api/v1/auth/mfa/enable', { code: totpCode(secret) });
+  assert.equal(enabled.status, 200, enabled.text);
+
+  const challenged = await request(app).post('/api/v1/auth/login').send({ email: 'admin@test.aft', password: PASSWORD });
+  assert.equal(challenged.status, 200);
+  assert.equal(challenged.body.data.mfaRequired, true);
+  assert.equal(challenged.headers['set-cookie'], undefined);
+  const challengeToken = challenged.body.data.challengeToken;
+  const verified = await request(app).post('/api/v1/auth/mfa/verify').send({ challengeToken, code: totpCode(secret) });
+  assert.equal(verified.status, 200, verified.text);
+  assert.ok(cookieValue(verified, 'aft_session'));
+
+  const second = await request(app).post('/api/v1/auth/login').send({ email: 'admin@test.aft', password: PASSWORD });
+  const recoveryToken = second.body.data.challengeToken;
+  const recovered = await request(app).post('/api/v1/auth/mfa/verify').send({ challengeToken: recoveryToken, code: setup.body.data.recoveryCodes[0] });
+  assert.equal(recovered.status, 200, recovered.text);
+  const third = await request(app).post('/api/v1/auth/login').send({ email: 'admin@test.aft', password: PASSWORD });
+  const reused = await request(app).post('/api/v1/auth/mfa/verify').send({ challengeToken: third.body.data.challengeToken, code: setup.body.data.recoveryCodes[0] });
+  assert.equal(reused.status, 401);
 });
 
 test('an authorised administrator can create an invitation and the invited account cannot sign in yet', async () => {

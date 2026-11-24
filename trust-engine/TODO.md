@@ -4,8 +4,8 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 
 ## Foundation
 
-- [x] MySQL/TiDB schema (38 tables) with foreign keys and indexes.
-- [x] Idempotent migration runner with checksum history (001–008).
+- [x] MySQL/TiDB schema (40 tables) with foreign keys and indexes.
+- [x] Idempotent migration runner with checksum history (001–009).
 - [x] scrypt password hashing, hashed session tokens, API-key hashing, AES-256-GCM credential vault, hash-chained audit writer.
 
 ## Authentication, RBAC and tenancy
@@ -16,7 +16,7 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 - [x] Organisation ownership and institution access grants; cross-tenant reads return 404.
 - [x] API keys with prefix lookup, hashing, expiry, revocation and scope enforcement.
 - [~] Failed-login lockout is a rate limit, not a per-account lockout.
-- [ ] MFA, email verification and password reset.
+- [~] TOTP MFA enrollment, login challenge, recovery-code consumption and attempt limits implemented and integration-tested; production enrollment/enforcement, email verification and password reset remain.
 
 ## Business identity (A)
 
@@ -80,7 +80,7 @@ Status as of 24 November 2026. `[x]` means implemented and exercised; `[~]` mean
 
 ## Tests and verification
 
-- [x] 33 integration tests against a real database, including invitation creation, pre-activation login refusal, expiry, mismatch, activation, reuse refusal and activation audit.
+- [x] 34 integration tests against a real database, including invitation and MFA enrollment/challenge/recovery flows.
 - [x] 6 unit tests for hashing, dates and invoice status semantics.
 - [x] Malformed input, cross-tenant access, grant-scope and API-key-scope tests.
 - [x] "Unsupported evidence must not verify" test.
