@@ -155,7 +155,7 @@ export const openApiDocument = {
         security: [],
         requestBody: {
           required: true,
-          content: { 'application/json': { schema: { type: 'object', required: ['token', 'password'], properties: { token: { type: 'string' }, password: { type: 'string', minLength: 14 }, fullName: { type: 'string' } } } } },
+        content: { 'application/json': { schema: { type: 'object', required: ['token', 'password', 'confirmPassword'], properties: { token: { type: 'string' }, password: { type: 'string', minLength: 14 }, confirmPassword: { type: 'string', minLength: 14 }, fullName: { type: 'string' } } } } },
         },
         responses: { 200: { description: 'Account activated' }, 401: errorResponse, 429: errorResponse },
       },

@@ -9,7 +9,7 @@
 | Container image | `Dockerfile` at repository root |
 | Health check | `GET /health` (unauthenticated, 200 when the database responds) |
 | Database migrations | Applied automatically at container start unless `AUTO_MIGRATE=false` |
-| Published checkpoint | `79ab2e1aee8b8a7ea8fc6fa0f3ae7742ea5e6108` (`79ab2e1`), published 24 November 2026 |
+| Published checkpoint | `15b3f6fc1916537129ec5a05c4f1c697fe4e8221` (`15b3f6f`), published 24 November 2026 |
 | Existing landing page | https://africanfinancialtrust.pages.dev/ (separate static site) |
 
 The published container is public. The first publication was private; public visibility was explicitly confirmed by the owner. The app has its own login screen; platform OAuth is not used for application accounts.
@@ -72,7 +72,7 @@ The project is configured with:
 
 Publication is a separate step from a Git checkpoint. The live version corresponds to the published checkpoint recorded in the project’s Version history. To publish a new checkpoint, use the Dashboard Publish control or the Webdev publish operation after pushing to canonical `main`.
 
-The live deployment was last published from checkpoint `79ab2e1`. A later documentation-only commit does not change runtime behaviour; republish it if byte-for-byte version alignment is required.
+The live deployment is published from checkpoint `15b3f6f`, which includes the invitation flow. Migration 008 adds the `user_invitations` table; container startup applies it automatically unless `AUTO_MIGRATE=false`. Verify the live activation route before creating the first production invitation.
 
 ## Database
 
@@ -127,7 +127,8 @@ The application does not implement its own database backup scheduler. The manage
 
 ## Production checklist
 
-- Rotate/remove demo accounts and the published demo password.
+- Keep all synthetic demo accounts disabled; the demo password remains in source history and must never be used for real onboarding.
+- Complete secure activation of the first production administrator, then require MFA before customer onboarding.
 - Set a unique `APP_ENCRYPTION_KEY` in the platform secret store.
 - Set `PUBLIC_ORIGIN` to the final domain.
 - Confirm database backups and perform a restore drill.
