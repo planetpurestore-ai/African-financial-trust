@@ -120,7 +120,7 @@ Required external credentials are listed in [INTEGRATIONS.md](INTEGRATIONS.md). 
 
 ## 7. Demo accounts
 
-All seeded accounts use the password **`AftDemo!2026#Kigali`**.
+All seeded accounts were created with the password **`AftDemo!2026#Kigali`**. They are disabled in the live database, their active sessions were revoked, and `user.disabled` audit events were written. The password remains visible in source history for synthetic local/test fixtures and must never be used for real onboarding.
 
 | Role | Email |
 | --- | --- |
@@ -134,16 +134,16 @@ All seeded accounts use the password **`AftDemo!2026#Kigali`**.
 | Gasabo Logistics business admin | `finance@gasabologistics.rw` |
 | Nairobi Agro business admin | `finance@nairobiagro.co.ke` |
 
-**These credentials are public in the repository and must be removed or rotated before any real data is loaded.** The seed is guarded by an existing-data check; `SEED_FORCE=true` appends another synthetic dataset and is not recommended on a shared database.
+**Do not re-enable these accounts or load real data into the synthetic organisations.** The seed is guarded by an existing-data check; `SEED_FORCE=true` appends another synthetic dataset and is not recommended on a shared database.
 
 ## 8. Testing and evidence
 
 ```bash
-npm test          # 30 integration tests, real MySQL/MariaDB
+npm test          # 33 integration tests, real MySQL/MariaDB
 npm run test:unit # 6 unit tests
 ```
 
-Both suites passed on 24 November 2026. The integration suite covers auth/CSRF, tenant isolation, auditor read-only behaviour, grant scope isolation, API-key scope enforcement, document upload/hash/duplicate/extraction/download, invoice arithmetic and evidence statuses, corroborated invoice verification, duplicate invoice detection, reconciliation and payment creation, Trust Record versioning/hash verification, audit tamper detection and OpenAPI/404 behaviour.
+Both suites passed on 24 November 2026. The integration suite also covers invitation creation, pre-activation login refusal, token expiry, minimum password and mismatch validation, activation audit logging and token reuse refusal.
 
 Not covered: browser E2E automation, load/concurrency testing, OCR accuracy benchmarks, malware fuzzing, dependency CVE scanning, penetration testing, backup restore drills, email/SMS delivery and live provider data flows. See [TESTING.md](TESTING.md).
 
@@ -179,14 +179,14 @@ Implemented: scrypt password hashing, hashed session tokens, CSRF, secure cookie
 
 Not implemented or not proven: MFA/SSO, email verification, password reset, malware scanning, application-layer encryption of business records, shared rate limiting, field-level read auditing, automated retention/erasure, legal hold, backup restore drill, external anchoring of hashes, SSRF allowlisting for custom provider URLs, dependency CVE scanning, penetration testing and certifications. The audit chain detects casual row tampering, not a privileged database operator rewriting the whole chain. See [SECURITY.md](SECURITY.md).
 
-The highest-priority immediate action is to remove the published demo accounts/password. The second is to set a unique `APP_ENCRYPTION_KEY` and confirm database backups.
+The highest-priority immediate action is to activate the first production administrator and enforce MFA before customer onboarding. The second is to set a unique `APP_ENCRYPTION_KEY` and confirm database backups.
 
 ## 11. Known blockers and incomplete work
 
 1. **No live registry/tax/bank/payment/email provider.** Requires commercial accounts and credentials from the owner. The platform deliberately does not fake these.
 2. **No email delivery.** Confirmation links are returned by the API/UI; someone must send them manually. A transactional email provider is needed for automation.
 3. **Payment adapters are connection tests, not integrations.** Data sync, webhooks, token refresh, payment initiation and settlement reconciliation are not built.
-4. **Demo credentials are public.** Must be removed before real use.
+4. **Demo credentials remain public in source history but are disabled in production.** They must never be re-enabled or used for real data.
 5. **No MFA/password reset/email verification.** Required before onboarding external users.
 6. **No backup/restore drill or retention automation.** The managed database is durable, but operational procedures are not proven.
 7. **No malware scanning or SSRF allowlist.** Required before untrusted uploads/custom provider URLs at scale.
@@ -195,7 +195,7 @@ The highest-priority immediate action is to remove the published demo accounts/p
 10. **No custom domain.** The live URL is a Manus subdomain. Pointing a branded domain requires DNS/domain control.
 11. **No FX conversion.** Multi-currency records are stored and compared in their own currency; cross-currency netting is not implemented.
 12. **No AI.** This is deliberate, not a missing feature: deterministic rules are used for financial validation. AI extraction is not wired and is not claimed.
-13. **GitHub delivery completed.** The complete source is pushed to `planetpurestore-ai/African-financial-trust` at commit `3c79fc8`, with the original landing page preserved at the repository root and the Trust Engine under `trust-engine/`.
+13. **GitHub delivery completed.** The complete source is pushed to `planetpurestore-ai/African-financial-trust` at commit `2b91f34`, with the original landing page preserved at the repository root and the Trust Engine under `trust-engine/`.
 
 ## 12. Deployment instructions
 
@@ -222,8 +222,8 @@ The detailed environment table, migration notes, health checks, backup checklist
 
 ## 13. Recommended next steps
 
-1. Rotate/remove demo accounts and the demo password; set a unique encryption key; confirm database backups.
-2. Add email verification, password reset and MFA for administrators.
+1. Activate `africanfinancialtrust@gmail.com` through the one-time invitation, then enforce MFA before customer onboarding.
+2. Add email delivery, email verification and password reset.
 3. Contract a transactional email provider and wire confirmation-link delivery.
 4. Decide the first real integration (likely bank-statement import and one mobile-money provider) and build data sync with webhooks, idempotency and reconciliation.
 5. Add malware scanning and provider-host allowlisting.

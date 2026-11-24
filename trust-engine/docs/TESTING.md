@@ -4,7 +4,7 @@
 
 | Suite | Command | Result |
 | --- | --- | --- |
-| Integration/API | `npm test` | **30 passed, 0 failed** |
+| Integration/API | `npm test` | **33 passed, 0 failed** |
 | Unit | `npm run test:unit` | **6 passed, 0 failed** |
 
 The integration suite runs against a real MySQL/MariaDB database (`aft_test`), applies all migrations, creates isolated tenants and users, uploads real generated PDFs, processes extraction, verifies invoices, imports a bank statement, reconciles it, generates and verifies Trust Records, tampers with an audit entry, and exercises API-key and grant scope boundaries.
@@ -30,6 +30,9 @@ The test database must exist and the user must have DDL rights. `pdftotext`, `pd
 - Session authentication returns the current user, organisation and role.
 - State-changing session requests require a matching CSRF token.
 - Unauthenticated API calls are rejected.
+- An authorised administrator can create a single-use invitation; the invited account cannot sign in before activation.
+- Activation rejects invalid and expired tokens, passwords shorter than 14 characters and mismatched confirmation values.
+- Successful activation writes an audit event, permits sign-in and rejects token reuse.
 - Auditor accounts are read-only.
 - Business registration sets `self_declared` status and the correct owner organisation.
 - A second tenant cannot read the first tenant’s business; its list contains only its own record.
