@@ -56,7 +56,14 @@ function vaultKey() {
   if (cachedKey) return cachedKey;
   if (process.env.APP_ENCRYPTION_KEY) {
     const raw = process.env.APP_ENCRYPTION_KEY;
-    cachedKey = /^[0-9a-f]{64}$/i.test(raw) ? Buffer.from(raw, 'hex') : Buffer.from(raw, 'base64');
+    if (/^[0-9a-f]{64}$/i.test(raw)) cachedKey = Buffer.from(raw, 'hex');
+    else {
+      let decoded;
+      try { decoded = Buffer.from(raw, 'base64'); } catch { decoded = null; }
+      if (decoded?.length === 32) cachedKey = decoded;
+      else if (Buffer.byteLength(raw, 'utf8') >= 32) cachedKey = createHash('sha256').update(raw, 'utf8').digest();
+      else throw new Error('APP_ENCRYPTION_KEY must be a 32-byte value or at least 32 characters');
+    }
   } else {
     const material = process.env.MANUS_JWT_SECRET || 'aft-local-development-key-material';
     cachedKey = Buffer.from(hkdfSync('sha256', material, 'aft-credential-vault', 'v1', 32));
