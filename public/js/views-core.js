@@ -4,7 +4,7 @@ import {
   api, state, esc, money, num, pct, fmtDate, fmtDateTime, timeAgo, titleCase, statusChip, gradeBadge,
   provenanceLabel, empty, errorPanel, openModal, toast, navigate, requireBusiness, businessChooser,
   setCrumbs, setActiveNav,
-} from './core.js?v=20261124-3';
+} from './core.js?v=20261124-4';
 
 /* --------------------------------------------------------------- shared */
 
@@ -144,7 +144,12 @@ export async function overviewView(el) {
     panel.innerHTML = '<div class="notice info" style="margin-top:12px"><span>Preparing your secure MFA setup. Please wait…</span></div>';
     try {
       const setup = (await api('/auth/mfa/setup', { method: 'POST', body: {} })).data;
-      panel.innerHTML = `<div class="notice info" style="margin-top:12px"><span>Scan this otpauth URI in your authenticator app, or enter the secret manually.</span></div><div class="hash-box" style="margin-top:10px;word-break:break-all">${esc(setup.otpauthUri)}</div><p class="small muted" style="margin-top:8px">Manual secret: <span class="mono">${esc(setup.secret)}</span></p><p class="small muted">Save these recovery codes securely now:</p><div class="hash-box mono">${setup.recoveryCodes.map((code) => esc(code)).join('<br>')}</div><form id="mfa-enable-overview-form" style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="field"><span>Current authenticator code</span><input name="code" inputmode="numeric" minlength="6" maxlength="6" required></label><button class="btn btn-primary" type="submit">Enable MFA</button></form>`;
+      const recoveryText = setup.recoveryCodes.join('\n');
+      panel.innerHTML = `<div class="notice info" style="margin-top:12px"><span>Scan this otpauth URI in your authenticator app, or enter the secret manually.</span></div><div class="hash-box" style="margin-top:10px;word-break:break-all">${esc(setup.otpauthUri)}</div><p class="small muted" style="margin-top:8px">Manual secret: <span class="mono">${esc(setup.secret)}</span></p><p class="small muted">Save these recovery codes securely now:</p><div class="hash-box mono" id="mfa-recovery-overview">${setup.recoveryCodes.map((code) => esc(code)).join('<br>')}</div><button class="btn btn-sm" type="button" data-action="copy-recovery-overview" style="margin-top:8px">Copy recovery codes</button><form id="mfa-enable-overview-form" style="margin-top:12px;display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="field"><span>Current authenticator code</span><input name="code" inputmode="numeric" minlength="6" maxlength="6" required></label><button class="btn btn-primary" type="submit">Enable MFA</button></form>`;
+      panel.querySelector('[data-action="copy-recovery-overview"]').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(recoveryText); toast('Recovery codes copied. Paste them into your password manager.'); }
+        catch { toast('Copy was blocked. Press and hold the codes to select and copy them.', 'error'); }
+      });
       panel.querySelector('form').addEventListener('submit', async (submitEvent) => {
         submitEvent.preventDefault();
         const form = submitEvent.currentTarget;
