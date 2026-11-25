@@ -4,7 +4,7 @@ import {
   api, state, esc, money, num, pct, fmtDate, fmtDateTime, timeAgo, titleCase, statusChip, gradeBadge,
   provenanceLabel, empty, errorPanel, openModal, toast, navigate, requireBusiness, businessChooser,
   setCrumbs, setActiveNav,
-} from './core.js?v=20261125-1';
+} from './core.js?v=20261125-2';
 
 /* --------------------------------------------------------------- shared */
 
@@ -215,20 +215,18 @@ export async function businessesView(el) {
   if (btn) btn.addEventListener('click', () => businessModal());
 }
 
-export function businessModal() {
+export async function businessModal() {
+  const profiles = (await api('/businesses/country-profiles')).data;
+  const defaultProfile = profiles.find((profile) => profile.country_code === 'RW') || profiles[0];
   openModal({
     title: 'Register a business',
     subtitle: 'The record starts as self-declared. Verification is a separate, auditable act.',
     submitLabel: 'Create record',
     body: `<div class="form-grid">
       <label class="field span2"><span>Legal name</span><input name="legalName" required maxlength="255" placeholder="Registered entity name"></label>
-      <label class="field"><span>Country</span><select name="countryCode" required>
-        <option value="RW">Rwanda</option><option value="KE">Kenya</option><option value="NG">Nigeria</option><option value="GH">Ghana</option>
-        <option value="ZA">South Africa</option><option value="TZ">Tanzania</option><option value="UG">Uganda</option><option value="ZM">Zambia</option>
-        <option value="CI">Côte d'Ivoire</option><option value="SN">Senegal</option><option value="EG">Egypt</option>
-      </select></label>
-      <label class="field"><span>Registration number</span><input name="registrationNumber" maxlength="120"></label>
-      <label class="field"><span>Tax identification number</span><input name="taxId" maxlength="120"></label>
+      <label class="field"><span>Country / jurisdiction</span><select name="countryCode" required>${profiles.map((profile) => `<option value="${esc(profile.country_code)}" ${profile.country_code === defaultProfile?.country_code ? 'selected' : ''}>${esc(profile.name)} (${esc(profile.country_code)})</option>`).join('')}</select></label>
+      <label class="field"><span id="registration-label">${esc(defaultProfile?.registration_label || 'Registration number')}</span><input name="registrationNumber" maxlength="120"></label>
+      <label class="field"><span id="tax-label">${esc(defaultProfile?.tax_label || 'Tax identification number')}</span><input name="taxId" maxlength="120"></label>
       <label class="field"><span>Industry</span><input name="industry" maxlength="120" placeholder="Agri-processing, logistics…"></label>
       <label class="field"><span>City</span><input name="city" maxlength="120"></label>
       <label class="field"><span>Contact email</span><input name="email" type="email" maxlength="255"></label>
@@ -241,6 +239,13 @@ export function businessModal() {
       toast('Business record created.');
       navigate(`#/businesses/${created.id}`);
     },
+  });
+  const form = document.querySelector('#modal-form');
+  const country = form.querySelector('[name="countryCode"]');
+  country.addEventListener('change', () => {
+    const profile = profiles.find((item) => item.country_code === country.value);
+    form.querySelector('#registration-label').textContent = profile?.registration_label || 'Registration number';
+    form.querySelector('#tax-label').textContent = profile?.tax_label || 'Tax identification number';
   });
 }
 

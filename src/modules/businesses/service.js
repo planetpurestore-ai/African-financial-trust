@@ -62,9 +62,23 @@ export async function getCountryProfile(code) {
   return one('SELECT * FROM country_profiles WHERE country_code = ? AND active = 1', [code]);
 }
 
+export async function listCountryProfiles() {
+  return many(`SELECT country_code, name, currency_code, registration_label, registration_pattern,
+                      tax_label, tax_pattern, date_format, number_format, mobile_money_providers,
+                      registry_source, registry_api_available, verification_notes
+                 FROM country_profiles WHERE active = 1
+                ORDER BY CASE WHEN country_code = 'RW' THEN 0 ELSE 1 END, name`);
+}
+
 export async function createBusiness(auth, input, ctx = {}) {
   const profile = await getCountryProfile(input.countryCode);
   if (!profile) throw badRequest(`Country ${input.countryCode} is not supported yet`, { field: 'countryCode' });
+  if (input.registrationNumber && profile.registration_pattern && !new RegExp(profile.registration_pattern).test(input.registrationNumber)) {
+    throw badRequest(`${profile.registration_label} does not match the expected format`, { field: 'registrationNumber', country: input.countryCode });
+  }
+  if (input.taxId && profile.tax_pattern && !new RegExp(profile.tax_pattern).test(input.taxId)) {
+    throw badRequest(`${profile.tax_label} does not match the expected format`, { field: 'taxId', country: input.countryCode });
+  }
 
   return withTransaction(async (conn) => {
     const id = ulid();

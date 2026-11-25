@@ -12,6 +12,7 @@ import {
   listAccessGrants,
   listBusinesses,
   listHistory,
+  listCountryProfiles,
   recordVerification,
   revokeAccessGrant,
   updateBusiness,
@@ -38,9 +39,13 @@ router.get(
     const query = parse(listQuery, req.query);
     const page = pagination(req);
     const { rows, total } = await listBusinesses(req.auth, { ...query, ...page });
-    res.json(listBody(rows, total, page));
+  res.json(listBody(rows, total, page));
   }),
 );
+
+router.get('/country-profiles', asyncHandler(async (_req, res) => {
+  res.json({ data: await listCountryProfiles() });
+}));
 
 router.post(
   '/',

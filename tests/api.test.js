@@ -197,6 +197,14 @@ test('unauthenticated API calls are rejected', async () => {
   assert.equal(response.status, 401);
 });
 
+test('authenticated users receive Rwanda-first country jurisdiction profiles', async () => {
+  const response = await agentAdmin.agent.get('/api/v1/businesses/country-profiles');
+  assert.equal(response.status, 200, response.text);
+  assert.equal(response.body.data[0].country_code, 'RW');
+  assert.equal(response.body.data[0].currency_code, 'RWF');
+  assert.equal(response.body.data[0].registration_label, 'RDB registration number');
+});
+
 test('MFA enrollment gates login, accepts TOTP and consumes recovery codes', async () => {
   const status = await agentAdmin.agent.get('/api/v1/auth/mfa/status');
   assert.equal(status.status, 200);
